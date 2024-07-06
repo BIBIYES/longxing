@@ -1,3 +1,7 @@
+/**
+ * 图片转换base64工具
+ * 给他一个文件对象，他会返回一个base64字符串
+ */
 export const convertBase64 = (event) => {
   console.log("调用base64格式转换工具");
   const fileData = event.target.files[0];

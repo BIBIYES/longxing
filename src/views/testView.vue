@@ -2,43 +2,40 @@
 import { ref, onMounted } from 'vue'
 import CryptoJS from 'crypto-js'
 import { convertBase64 } from '@/utils/imgBase64Util'
-const APPID = 'c3fbc474'
-const APIKey = 'f53a5d5b29d3b8c0770b3b51224dbab9'
-const APISecret = 'YzgzN2E3NzM2NDVjNWRkMGQwZGE5OTEz'
-const host = 'spark-api.cn-huabei-1.xf-yun.com'
+import VoiceRecognizer from '@/utils/VoiceRecognizer'
+
+const APP_ID = 'c3fbc474'
+const API_KEY = 'f53a5d5b29d3b8c0770b3b51224dbab9'
+const API_SECRET = 'YzgzN2E3NzM2NDVjNWRkMGQwZGE5OTEz'
+const HOST = 'spark-api.cn-huabei-1.xf-yun.com'
+
 const date = ref(null)
 const authorization = ref(null)
 const ws = ref(null)
-const question = ref('')
-const imgBase64 = ref('')
-// 存储消息的变量
+let question = ref('')
+let imgBase64 = ref('')
 const messages = ref([])
+const fileInputRef = ref(null)
+// 增加一个状态来跟踪当前是否在录音
+
 const generateAuthParams = () => {
-  // Generate the date string
   const curTime = new Date()
   date.value = curTime.toUTCString()
 
-  // Create the tmp string for signature
-  const tmp = `host: ${host}\ndate: ${date.value}\nGET /v2.1/image HTTP/1.1`
-
-  // Generate the HMAC-SHA256 signature
-  const tmpSha = CryptoJS.HmacSHA256(tmp, APISecret)
+  const tmp = `host: ${HOST}\ndate: ${date.value}\nGET /v2.1/image HTTP/1.1`
+  const tmpSha = CryptoJS.HmacSHA256(tmp, API_SECRET)
   const signature = CryptoJS.enc.Base64.stringify(tmpSha)
 
-  // Create the authorization string
-  const authorizationOrigin = `api_key="${APIKey}", algorithm="hmac-sha256", headers="host date request-line", signature="${signature}"`
-
-  // Base64 encode the authorization string
+  const authorizationOrigin = `api_key="${API_KEY}", algorithm="hmac-sha256", headers="host date request-line", signature="${signature}"`
   authorization.value = CryptoJS.enc.Base64.stringify(
     CryptoJS.enc.Utf8.parse(authorizationOrigin)
   )
 }
 
-// 连接websocket
 const connectWebSocket = () => {
-  const url = `wss://${host}/v2.1/image?authorization=${encodeURIComponent(
+  const url = `wss://${HOST}/v2.1/image?authorization=${encodeURIComponent(
     authorization.value
-  )}&date=${encodeURIComponent(date.value)}&host=${encodeURIComponent(host)}`
+  )}&date=${encodeURIComponent(date.value)}&host=${encodeURIComponent(HOST)}`
   console.log('WebSocket URL:', url)
   ws.value = new WebSocket(url)
   ws.value.onopen = () => {
@@ -54,21 +51,12 @@ const connectWebSocket = () => {
     console.error('WebSocket error:', error)
   }
 }
-/**
- * 保存消息将消息保存到聊天对象中
- * 聊天对象包含所有聊天消息
- * 页面上的数据也是用聊天对象中获取
- * 无法是发送消息，接受消息都要把他保存在聊天对象中
- * 形成聊天记录
- */
 
-// 消息模板
 let tempMessage = {
   role: '',
   content: ''
 }
 
-// 处理返回消息
 const handelResultMessage = (message) => {
   message = JSON.parse(message)
   console.log(message)
@@ -81,18 +69,14 @@ const handelResultMessage = (message) => {
 
   switch (message.header.status) {
     case 0:
-      // 创建一个新的聊天
       messages.value.push({ ...tempMessage })
       break
     case 1:
-      // 中间消息
       messages.value[messages.value.length - 1] = { ...tempMessage }
       break
     default:
-      // 结束消息
       messages.value[messages.value.length - 1] = { ...tempMessage }
       console.log(tempMessage)
-      // 初始化缓存
       tempMessage = {
         role: '',
         content: ''
@@ -100,7 +84,7 @@ const handelResultMessage = (message) => {
       break
   }
 }
-// 解析消息
+
 const getMessage = (message) => {
   try {
     const str = message.payload.choices.text[0].content
@@ -111,10 +95,9 @@ const getMessage = (message) => {
   }
 }
 
-// 发送消息载荷
 let sendMessagePayload = {
   header: {
-    app_id: APPID,
+    app_id: APP_ID,
     uid: '39769795890'
   },
   parameter: {
@@ -128,19 +111,7 @@ let sendMessagePayload = {
   },
   payload: {
     message: {
-      text: [
-        // 像这样把消息添加到这里面来
-        // {
-        //   role: 'user',
-        //   content: base64String,
-        //   content_type: 'image'
-        // },
-        // {
-        //   role: 'user',
-        //   content: question.value,
-        //   content_type: 'text'
-        // }
-      ]
+      text: []
     }
   }
 }
@@ -148,7 +119,6 @@ let sendMessagePayload = {
 const sendMessage = () => {
   if (question.value || imgBase64.value) {
     const newMessage = []
-    // 加载历史消息
     messages.value.forEach((e) => {
       newMessage.push(e)
     })
@@ -167,7 +137,6 @@ const sendMessage = () => {
         content: question.value,
         content_type: 'text'
       })
-      // 将消息储存到聊天对象中
       resetInputData()
       messages.value = newMessage
     }
@@ -183,23 +152,52 @@ const sendMessage = () => {
 const handleFileChange = (event) => {
   convertBase64(event)
     .then((base64String) => {
-      // 将 base64 编码字符串赋值给 imgBase64.value
       imgBase64.value = base64String
     })
     .catch((error) => {
       console.error('文件读取错误:', error)
     })
 }
-// 发送消息清空输入框和图片
+
 const resetInputData = () => {
   question.value = ''
   imgBase64.value = ''
 }
+
+const triggerFileInput = () => {
+  if (fileInputRef.value) {
+    fileInputRef.value.click()
+  } else {
+    console.error('fileInputRef is not set')
+  }
+}
+
+// 录音函数
+const voiceRecognizer = new VoiceRecognizer()
+const isRecording = ref(false)
+const startRecording = () => {
+  if (isRecording.value) {
+    // 停止录音
+    voiceRecognizer.stop()
+    isRecording.value = false
+  } else {
+    // 开始录音
+    voiceRecognizer.start()
+    voiceRecognizer.onResult = (result) => {
+      question.value += result
+    }
+    isRecording.value = true
+  }
+}
+
 onMounted(() => {
   generateAuthParams()
   connectWebSocket()
 })
 </script>
+
+
+
 <template>
   <div class="chat-container">
     <div class="chat-messages markdown-body" ref="chatBox">
@@ -234,7 +232,7 @@ onMounted(() => {
             @change="handleFileChange"
             accept="image/*"
             style="display: none"
-            ref="fileInput"
+            ref="fileInputRef"
           />
           <div class="icon icon-upload" @click="triggerFileInput">
             <img src="../assets/img/上传.png" alt="Upload Icon" />
@@ -309,7 +307,7 @@ onMounted(() => {
       }
     }
   }
-
+  //输入框
   .input-container {
     width: 100%;
     padding: 10px;
@@ -362,22 +360,24 @@ onMounted(() => {
           flex-grow: 1;
           max-height: 300px;
           min-height: 23px;
+          line-height: 20px;
         }
 
         .icon {
           width: 30px;
           height: 30px;
-          margin: 0 10px;
-          background-color: black;
-          border-radius: 50px;
+
+          border-radius: 100px;
           display: flex;
           justify-content: center;
           align-items: center;
           cursor: pointer;
+          overflow: hidden;
 
           img {
-            width: 18px;
-            height: 18px;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
             filter: invert(100%);
           }
 
