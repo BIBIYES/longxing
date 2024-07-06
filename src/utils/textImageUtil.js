@@ -1,91 +1,114 @@
-import CryptoJS from 'crypto-js';
+import CryptoJS from 'crypto-js'
+
+const APP_ID = 'c3fbc474'
+const API_KEY = 'f53a5d5b29d3b8c0770b3b51224dbab9'
+const API_SECRET = 'YzgzN2E3NzM2NDVjNWRkMGQwZGE5OTEz'
+const HOST = 'spark-api.cn-huabei-1.xf-yun.com'
 
 class TextImageUtil {
   constructor() {
-    this.APP_ID = 'c3fbc474';
-    this.API_KEY = 'f53a5d5b29d3b8c0770b3b51224dbab9';
-    this.API_SECRET = 'YzgzN2E3NzM2NDVjNWRkMGQwZGE5OTEz';
-    this.HOST = 'spark-api.cn-huabei-1.xf-yun.com';
-    this.ws = null;
-    this.date = null;
-    this.authorization = null;
-    this.onMessage = null;
-    this.onError = null;
-    this.init();
-  }
+    this.date = null
+    this.authorization = null
+    this.ws = null
+    this.onMessageCallback = null
+    this.onErrorCallback = null
 
-  init() {
-    const { date, authorization } = this.generateAuthParams();
-    this.date = date;
-    this.authorization = authorization;
-    this.connectWebSocket();
+    this.generateAuthParams()
+    this.connectWebSocket()
   }
 
   generateAuthParams() {
-    const date = new Date().toUTCString();
-    const tmp = `host: ${this.HOST}\ndate: ${date}\nGET /v2.1/image HTTP/1.1`;
-    const tmpSha = CryptoJS.HmacSHA256(tmp, this.API_SECRET);
-    const signature = CryptoJS.enc.Base64.stringify(tmpSha);
-    const authorizationOrigin = `api_key="${this.API_KEY}", algorithm="hmac-sha256", headers="host date request-line", signature="${signature}"`;
-    const authorization = CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(authorizationOrigin));
-    return { date, authorization };
+    const curTime = new Date()
+    this.date = curTime.toUTCString()
+
+    const tmp = `host: ${HOST}\ndate: ${this.date}\nGET /v2.1/image HTTP/1.1`
+    const tmpSha = CryptoJS.HmacSHA256(tmp, API_SECRET)
+    const signature = CryptoJS.enc.Base64.stringify(tmpSha)
+
+    const authorizationOrigin = `api_key="${API_KEY}", algorithm="hmac-sha256", headers="host date request-line", signature="${signature}"`
+    this.authorization = CryptoJS.enc.Base64.stringify(
+      CryptoJS.enc.Utf8.parse(authorizationOrigin)
+    )
   }
 
   connectWebSocket() {
-    const url = `wss://${this.HOST}/v2.1/image?authorization=${encodeURIComponent(this.authorization)}&date=${encodeURIComponent(this.date)}&host=${encodeURIComponent(this.HOST)}`;
-    console.log('WebSocket URL:', url);
-    this.ws = new WebSocket(url);
+    const url = `wss://${HOST}/v2.1/image?authorization=${encodeURIComponent(
+      this.authorization
+    )}&date=${encodeURIComponent(this.date)}&host=${encodeURIComponent(HOST)}`
+    console.log('WebSocket URL:', url)
+    this.ws = new WebSocket(url)
 
     this.ws.onopen = () => {
-      console.log('WebSocket connection opened');
-    };
+      console.log('WebSocket connection opened')
+    }
 
     this.ws.onmessage = (event) => {
-      if (this.onMessage) {
-        this.onMessage(event.data);
+      if (this.onMessageCallback) {
+        this.onMessageCallback(event.data)
       }
-    };
+    }
 
     this.ws.onclose = () => {
-      this.connectWebSocket();
-    };
+      this.connectWebSocket()
+    }
 
     this.ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      if (this.onError) {
-        this.onError(error);
+      if (this.onErrorCallback) {
+        this.onErrorCallback(error)
       }
-    };
-  }
-
-  sendMessage(question, imgBase64) {
-    const newMessage = [];
-
-    if (imgBase64) {
-      newMessage.push({ role: 'user', content: imgBase64, content_type: 'image' });
+      console.error('WebSocket error:', error)
     }
-
-    if (question) {
-      newMessage.push({ role: 'user', content: question, content_type: 'text' });
-    }
-
-    const sendMessagePayload = {
-      header: { app_id: this.APP_ID, uid: '39769795890' },
-      parameter: { chat: { domain: 'general', temperature: 0.5, top_k: 4, max_tokens: 2028, auditing: 'default' } },
-      payload: { message: { text: newMessage } }
-    };
-
-    console.log(sendMessagePayload);
-    this.ws.send(JSON.stringify(sendMessagePayload));
   }
 
   setOnMessageCallback(callback) {
-    this.onMessage = callback;
+    this.onMessageCallback = callback
   }
 
   setOnErrorCallback(callback) {
-    this.onError = callback;
+    this.onErrorCallback = callback
+  }
+
+  sendMessage(question, imgBase64) {
+    const sendMessagePayload = {
+      header: {
+        app_id: APP_ID,
+        uid: '39769795890'
+      },
+      parameter: {
+        chat: {
+          domain: 'general',
+          temperature: 0.5,
+          top_k: 4,
+          max_tokens: 2028,
+          auditing: 'default'
+        }
+      },
+      payload: {
+        message: {
+          text: []
+        }
+      }
+    }
+
+    if (imgBase64) {
+      sendMessagePayload.payload.message.text.push({
+        role: 'user',
+        content: imgBase64,
+        content_type: 'image'
+      })
+    }
+
+    if (question) {
+      sendMessagePayload.payload.message.text.push({
+        role: 'user',
+        content: question,
+        content_type: 'text'
+      })
+    }
+
+    console.log(sendMessagePayload)
+    this.ws.send(JSON.stringify(sendMessagePayload))
   }
 }
 
-export default TextImageUtil;
+export default TextImageUtil

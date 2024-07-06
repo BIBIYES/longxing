@@ -1,203 +1,88 @@
 <script setup>
-import { ref, onMounted, watch, nextTick } from 'vue'
-import { marked } from 'marked'
-import { useSessionStore } from '@/stores/sessionStore'
-import { useRouter, useRoute } from 'vue-router'
-import 'github-markdown-css/github-markdown.css'
+import { ref, onMounted } from 'vue'
 import { convertBase64 } from '@/utils/imgBase64Util'
-// 路由所需
-const router = useRouter()
-const route = useRoute()
-// 历史数据所需
-const sessionStore = useSessionStore()
-// 用户的问题
-const question = ref('')
-// 页面聊天记录存储数组
-const messages = ref([])
-// 盒子变量，调整盒子高度需要
-const chatBox = ref(null)
-// 输入框变量，调整输入框高度需要
-const textareaRef = ref(null)
-// base64图片存储变量
+import VoiceRecognizer from '@/utils/VoiceRecognizer'
+import TextImageUtil from '@/utils/textImageUtil'
+
+let question = ref('')
 let imgBase64 = ref('')
-// 上传文件需要这个
+const messages = ref([])
 const fileInputRef = ref(null)
-// 纯文本websocket 对象
-let ws = ref(null)
-let currentMessage = ref(null)
-let messageId = ref(0)
+const isRecording = ref(false)
 
-const fetchChatData = () => {
-  const sessionId = route.params.id
-  const session = sessionStore.sessions.find((s) => s.id == sessionId)
-  if (session) {
-    messages.value = session.messages
-    messageId.value = session.messages.length
-  }
+// 图片理解
+const textImageUtil = new TextImageUtil()
+let tempMessage = {
+  role: '',
+  content: ''
+}
+const handleWebSocketMessage = (data) => {
+  data = JSON.parse(data)
+  console.log(data)
+  const { content, role } = data.payload.choices.text[0]
+  const status = data.header.status
+  console.log(content)
 
-  const initialMessage = route.query.initialMessage
-  if (initialMessage) {
-    addUserMessage(initialMessage)
+  tempMessage.role = role
+  tempMessage.content += content
+
+  switch (
+    status // Corrected 'message.header.status' to 'status'
+  ) {
+    case 0:
+      messages.value.push({ ...tempMessage })
+      console.log('创建会话')
+      break
+    case 1:
+      messages.value[messages.value.length - 1] = { ...tempMessage }
+      console.log('中途会话')
+      break
+    default:
+      messages.value[messages.value.length - 1] = { ...tempMessage }
+      console.log('结束会话')
+      tempMessage = {
+        role: '',
+        content: ''
+      }
+      break
   }
 }
 
-const connect = () => {
-  ws.value = new WebSocket('ws://localhost:8080/ws/1')
-
-  ws.value.onmessage = (event) => {
-    if (event.data === '|') {
-      if (currentMessage.value) {
-        const completeMessage = {
-          id: currentMessage.value.id,
-          role: currentMessage.value.role,
-          content: currentMessage.value.content.trim()
-        }
-        messages.value = messages.value.map((msg) =>
-          msg.id === completeMessage.id ? completeMessage : msg
-        )
-        currentMessage.value = null
-        scrollToBottom()
-      }
-      return
-    }
-
-    if (!currentMessage.value) {
-      currentMessage.value = {
-        id: messageId.value++,
-        role: 'assistant',
-        content: '',
-        content_type: 'text'
-      }
-      messages.value.push(currentMessage.value)
-    }
-
-    currentMessage.value.content += event.data
-    messages.value = messages.value.map((msg) =>
-      msg.id === currentMessage.value.id ? currentMessage.value : msg
-    )
-    scrollToBottom()
-  }
-
-  ws.value.onopen = () => {
-    console.log('连接成功')
-  }
-
-  ws.value.onclose = () => {
-    console.log('连接关闭，正在尝试重连...')
-    setTimeout(connect, 1000)
-  }
-
-  ws.value.onerror = (error) => {
-    console.error('WebSocket错误: ', error)
-  }
+const handleWebSocketError = (error) => {
+  console.error('WebSocket error:', error)
 }
+
+textImageUtil.setOnMessageCallback(handleWebSocketMessage)
+textImageUtil.setOnErrorCallback(handleWebSocketError)
 
 const sendMessage = () => {
-  if (question.value.trim() === '') return
-  addUserMessage(question.value)
-  question.value = ''
-}
-
-const addUserMessage = (messageContent) => {
-  const userMessage = {
-    // id: messageId.value++,
-    role: 'user',
-    content: messageContent,
-    content_type: 'text'
-  }
-  messages.value.push(userMessage)
-  scrollToBottom()
-  sendToServer()
-}
-
-const sendToServer = () => {
-  const messagePayload = {
-    question: messages.value.map((msg) => ({
-      role: msg.role,
-      content: msg.content
-    })),
-    userid: 1
-  }
-
-  fetch('http://localhost:8080/api/ai', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(messagePayload)
-  })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error('Network response was not ok')
-      }
+  if (question.value || imgBase64.value) {
+    messages.value.push({
+      role: 'user',
+      content: imgBase64.value,
+      content_type: 'image'
     })
-    .catch((error) => {
-      console.error('There was a problem with the fetch operation:', error)
+    messages.value.push({
+      role: 'user',
+      content: question.value,
+      content_type: 'text'
     })
-}
-
-const scrollToBottom = () => {
-  nextTick(() => {
-    if (chatBox.value) {
-      chatBox.value.scrollTop = chatBox.value.scrollHeight
-    }
-  })
-}
-
-const getTheFirstRouteRequest = () => {
-  const initialMessage = route.query.question
-  if (initialMessage) {
-    addUserMessage(initialMessage)
+    textImageUtil.sendMessage(question.value, imgBase64.value)
+    question.value = ''
+    imgBase64.value = ''
+  } else {
+    console.log('你没有提问或选择图片。')
   }
 }
 
-// 输入框高度自适应
-const adjustHeight = () => {
-  if (textareaRef.value) {
-    textareaRef.value.style.height = 'auto'
-    textareaRef.value.style.height = `${textareaRef.value.scrollHeight}px`
+const handleFileChange = async (event) => {
+  try {
+    imgBase64.value = await convertBase64(event)
+  } catch (error) {
+    console.error('File read error:', error)
   }
 }
 
-onMounted(() => {
-  connect()
-  fetchChatData()
-
-  const waitForConnection = () => {
-    return new Promise((resolve) => {
-      const checkConnection = () => {
-        if (ws.value && ws.value.readyState === WebSocket.OPEN) {
-          resolve()
-        } else {
-          setTimeout(checkConnection, 100)
-        }
-      }
-      checkConnection()
-    })
-  }
-
-  waitForConnection().then(() => {
-    getTheFirstRouteRequest()
-    router.replace({ query: null })
-  })
-
-  const textarea = document.getElementById('inputTextarea')
-  if (textarea) {
-    textarea.addEventListener('input', adjustHeight)
-  }
-})
-
-watch(() => route.params.id, fetchChatData)
-// 图片处理
-const handleFileChange = (event) => {
-  convertBase64(event)
-    .then((base64String) => {
-      imgBase64.value = base64String
-    })
-    .catch((error) => {
-      console.error('文件读取错误:', error)
-    })
-}
 const triggerFileInput = () => {
   if (fileInputRef.value) {
     fileInputRef.value.click()
@@ -205,6 +90,24 @@ const triggerFileInput = () => {
     console.error('fileInputRef is not set')
   }
 }
+
+const voiceRecognizer = new VoiceRecognizer()
+const startRecording = () => {
+  if (isRecording.value) {
+    voiceRecognizer.stop()
+    isRecording.value = false
+  } else {
+    voiceRecognizer.start()
+    voiceRecognizer.onResult = (result) => {
+      question.value += result
+    }
+    isRecording.value = true
+  }
+}
+
+onMounted(() => {
+  // WebSocket connection is already initialized in the script setup
+})
 </script>
 
 <template>
