@@ -1,65 +1,7 @@
-<template>
-  <div class="chat-container">
-    <div class="chat-box markdown-body" ref="chatBox">
-      <div
-        v-for="(msg, index) in messages"
-        :key="index"
-        :class="['message', msg.role]"
-      >
-        <template v-if="msg.role === 'assistant'">
-          <p>{{ msg.content }}</p>
-        </template>
-        <template v-else-if="msg.content_type === 'text'">
-          <p v-html="msg.content"></p>
-        </template>
-        <template v-else-if="msg.content_type === 'image'">
-          <img
-          v-if="imgBase64"
-          :src="`data:image/png;base64,${imgBase64}`"
-          alt="Uploaded Image"
-          class="uploaded-image"
-        />
-        </template>
-      </div>
-    </div>
-    <div class="input-box">
-      <div class="input-container">
-        <input
-          type="file"
-          ref="fileInput"
-          @change="handleFileChange"
-          accept="image/*"
-        />
-        <img
-          src="../assets/img/录音.png"
-          alt="Attachment Icon"
-          class="icon"
-          @click="startRecording"
-        />
-        <textarea
-          ref="textareaRef"
-          id="inputTextarea"
-          rows="1"
-          placeholder="给“龙萌说些什么”发送消息"
-          @input="adjustHeight"
-          v-model="question"
-        ></textarea>
-        <img
-          src="../assets/img/发送.png"
-          alt="Send Icon"
-          class="send-icon"
-          @click="sendMessage"
-        />
-      </div>
-    </div>
-  </div>
-</template>
-
-
 <script setup>
 import { ref, onMounted } from 'vue'
 import CryptoJS from 'crypto-js'
-
+import { convertBase64 } from '@/utils/imgBase64Util'
 const APPID = 'c3fbc474'
 const APIKey = 'f53a5d5b29d3b8c0770b3b51224dbab9'
 const APISecret = 'YzgzN2E3NzM2NDVjNWRkMGQwZGE5OTEz'
@@ -67,7 +9,6 @@ const host = 'spark-api.cn-huabei-1.xf-yun.com'
 const date = ref(null)
 const authorization = ref(null)
 const ws = ref(null)
-const fileData = ref(null)
 const question = ref('')
 const imgBase64 = ref('')
 // 存储消息的变量
@@ -92,6 +33,7 @@ const generateAuthParams = () => {
     CryptoJS.enc.Utf8.parse(authorizationOrigin)
   )
 }
+
 // 连接websocket
 const connectWebSocket = () => {
   const url = `wss://${host}/v2.1/image?authorization=${encodeURIComponent(
@@ -105,9 +47,9 @@ const connectWebSocket = () => {
   ws.value.onmessage = (event) => {
     handelResultMessage(event.data)
   }
-  // ws.value.onclose = () => {
-  //   console.log('WebSocket connection closed')
-  // }
+  ws.value.onclose = () => {
+    connectWebSocket()
+  }
   ws.value.onerror = (error) => {
     console.error('WebSocket error:', error)
   }
@@ -119,9 +61,7 @@ const connectWebSocket = () => {
  * 无法是发送消息，接受消息都要把他保存在聊天对象中
  * 形成聊天记录
  */
-const saveMessages = (message) => {
-  messages.value.push(message)
-}
+
 // 消息模板
 let tempMessage = {
   role: '',
@@ -162,9 +102,13 @@ const handelResultMessage = (message) => {
 }
 // 解析消息
 const getMessage = (message) => {
-  const str = message.payload.choices.text[0].content
-  const role = message.payload.choices.text[0].role
-  return { str, role }
+  try {
+    const str = message.payload.choices.text[0].content
+    const role = message.payload.choices.text[0].role
+    return { str, role }
+  } catch (e) {
+    console.error('大模型响应的数据是错误的' + e)
+  }
 }
 
 // 发送消息载荷
@@ -204,6 +148,10 @@ let sendMessagePayload = {
 const sendMessage = () => {
   if (question.value || imgBase64.value) {
     const newMessage = []
+    // 加载历史消息
+    messages.value.forEach((e) => {
+      newMessage.push(e)
+    })
 
     if (imgBase64.value) {
       newMessage.push({
@@ -220,9 +168,8 @@ const sendMessage = () => {
         content_type: 'text'
       })
       // 将消息储存到聊天对象中
-      newMessage.forEach((message) => {
-        saveMessages(message) // 假设这里是保存消息的逻辑
-      })
+      resetInputData()
+      messages.value = newMessage
     }
 
     sendMessagePayload.payload.message.text = newMessage
@@ -234,29 +181,85 @@ const sendMessage = () => {
 }
 
 const handleFileChange = (event) => {
-  fileData.value = event.target.files[0]
-  console.log('Selected file:', fileData.value)
-
-  const reader = new FileReader()
-  reader.onload = (event) => {
-    // 获取完整的 base64 编码
-    const fullBase64 = event.target.result
-
-    // 去掉头部信息，只保留编码部分
-    const base64WithoutHeader = fullBase64.split(';base64,').pop()
-
-    // 存储到 imgBase64
-    imgBase64.value = base64WithoutHeader
-  }
-  reader.readAsDataURL(fileData.value)
+  convertBase64(event)
+    .then((base64String) => {
+      // 将 base64 编码字符串赋值给 imgBase64.value
+      imgBase64.value = base64String
+    })
+    .catch((error) => {
+      console.error('文件读取错误:', error)
+    })
 }
-
+// 发送消息清空输入框和图片
+const resetInputData = () => {
+  question.value = ''
+  imgBase64.value = ''
+}
 onMounted(() => {
   generateAuthParams()
   connectWebSocket()
 })
 </script>
-<style scoped>
+<template>
+  <div class="chat-container">
+    <div class="chat-messages markdown-body" ref="chatBox">
+      <div
+        v-for="(msg, index) in messages"
+        :key="index"
+        :class="['message', msg.role]"
+      >
+        <template v-if="msg.role === 'assistant'">
+          <p>{{ msg.content }}</p>
+        </template>
+        <template v-else-if="msg.content_type === 'text'">
+          <p v-html="msg.content"></p>
+        </template>
+        <template v-else-if="msg.content_type === 'image'">
+          <img
+            :src="`data:image/png;base64,${msg.content}`"
+            alt="Uploaded Image"
+            class="message-image"
+          />
+        </template>
+      </div>
+    </div>
+    <div class="input-container">
+      <div class="input-section">
+        <div class="image-preview" v-show="imgBase64">
+          <img :src="`data:image/png;base64,${imgBase64}`" alt="" />
+        </div>
+        <div class="input-controls">
+          <input
+            type="file"
+            @change="handleFileChange"
+            accept="image/*"
+            style="display: none"
+            ref="fileInput"
+          />
+          <div class="icon icon-upload" @click="triggerFileInput">
+            <img src="../assets/img/上传.png" alt="Upload Icon" />
+          </div>
+          <div class="icon icon-record" @click="startRecording">
+            <img src="../assets/img/录音.png" alt="Recording Icon" />
+          </div>
+          <textarea
+            ref="textareaRef"
+            id="inputTextarea"
+            rows="1"
+            placeholder="给“龙萌说些什么”发送消息"
+            @input="adjustHeight"
+            v-model="question"
+          ></textarea>
+          <div class="icon icon-send" @click="sendMessage">
+            <img src="../assets/img/发送.png" alt="Send Icon" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style lang="less" scoped>
 @import 'github-markdown-css/github-markdown.css';
 
 .chat-container {
@@ -266,160 +269,129 @@ onMounted(() => {
   max-width: 100%;
   margin: auto;
   box-sizing: border-box;
-}
 
-.title-box {
-  width: 100%;
-  text-align: center;
-  padding: 20px 0;
-  border-bottom: 2px solid #e0e0e0;
-}
+  .chat-messages {
+    flex: 1;
+    padding: 20px 40px;
+    overflow-y: auto;
+    background-color: #fafafa;
+    display: flex;
+    flex-direction: column;
+    border-radius: 10px;
 
-.title-box h1 {
-  margin: 0;
-  font-size: 24px;
-  color: #2c3e50;
-}
+    .message {
+      width: auto;
+      max-width: 70%;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      background-color: #ffffff;
+      word-wrap: break-word;
+      position: relative;
+      display: inline-block;
 
-.message {
-  width: auto;
-  max-width: 70%;
-  padding: 10px;
-  margin: 5px 0;
-  border-radius: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  background-color: #ffffff;
-  word-wrap: break-word;
-  position: relative;
-  display: inline-block;
-}
+      &.user {
+        align-self: flex-end;
+        background-color: #dcf8c6;
+        border-radius: 10px 10px 0 10px;
+      }
 
-.user {
-  align-self: flex-end;
-  background-color: #dcf8c6;
-  border-radius: 10px 10px 0 10px;
-}
+      &.assistant {
+        align-self: flex-start;
+        background-color: #f1f0f0;
+        border-radius: 10px 10px 10px 0;
+      }
 
-.assistant {
-  align-self: flex-start;
-  background-color: #f1f0f0;
-  border-radius: 10px 10px 10px 0;
-}
+      .message-image {
+        width: 200px;
+        border-radius: 10px;
+      }
+    }
+  }
 
-.message .content {
-  font-size: 16px;
-  color: #333;
-}
+  .input-container {
+    width: 100%;
+    padding: 10px;
+    background-color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 
-.message .timestamp {
-  font-size: 12px;
-  color: #999;
-  margin-top: 5px;
-  text-align: right;
-}
+    .input-section {
+      display: flex;
+      flex-direction: column;
+      justify-content: start;
+      width: 50%;
 
-.chat-box {
-  flex: 1;
-  padding: 20px;
-  overflow-y: auto;
-  background-color: #fafafa;
-  display: flex;
-  flex-direction: column;
-  padding: 40px;
-  padding-left: 100px;
-  border-radius: 10px;
-  padding-right: 100px;
-}
-.chat-box img{
-  width: 200px;
-  border-radius: 10px;
-}
-.input-box {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 10px;
-  background-color: #fff;
-}
+      .image-preview {
+        width: 100px;
+        height: 100px;
+        background-color: red;
+        overflow: hidden;
+        border-radius: 5px;
+        margin-bottom: 5px;
 
-.input-box .input {
-  width: 600px;
-  border-radius: 20px;
-  background-color: rgb(244, 244, 244);
-  overflow: hidden;
-  display: flex;
-  align-items: end;
-  padding: 12px;
-  box-sizing: border-box;
-}
+        img {
+          width: 100%;
+        }
+      }
 
-.input-box .input textarea {
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 16px;
-  width: 100%;
-  max-height: 150px;
-  height: auto;
-  border: none;
-  outline: none;
-  background: none;
-  resize: none;
-  padding: 0;
-  box-sizing: border-box;
-  overflow-y: auto;
-}
+      .input-controls {
+        width: 100%;
+        display: flex;
+        align-items: flex-end;
+        border-radius: 50px;
+        padding: 10px 20px;
+        background-color: #f5f5f5;
+        position: relative;
 
-.send {
-  width: 29px;
-  height: 29px;
-  border-radius: 50px;
-  background-color: rgb(0, 0, 0);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-}
+        textarea {
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: 16px;
+          width: 100%;
+          max-height: 150px;
+          height: auto;
+          border: none;
+          outline: none;
+          background: none;
+          resize: none;
+          padding: 0;
+          box-sizing: border-box;
+          overflow-y: auto;
+          flex-grow: 1;
+          max-height: 300px;
+          min-height: 23px;
+        }
 
-.send img {
-  width: 100%;
-}
+        .icon {
+          width: 30px;
+          height: 30px;
+          margin: 0 10px;
+          background-color: black;
+          border-radius: 50px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          cursor: pointer;
 
-.input-container {
-  width: 50%;
-  display: flex;
-  align-items: flex-end;
+          img {
+            width: 18px;
+            height: 18px;
+            filter: invert(100%);
+          }
 
-  border-radius: 50px;
-  padding: 10px 20px;
-  background-color: #f5f5f5;
-  position: relative;
-}
+          &.icon-upload,
+          &.icon-record {
+            margin-right: 10px;
+          }
 
-.input-container textarea {
-  max-height: 300px;
-  border: none;
-  outline: none;
-  flex-grow: 1;
-  background: none;
-  font-size: 16px;
-  resize: none;
-  overflow: hidden;
-  min-height: 23px;
-}
-
-.input-container .icon {
-  width: 30px;
-  height: 30px;
-  margin-right: 10px;
-  background-color: black;
-  border-radius: 50px;
-}
-
-.input-container .send-icon {
-  width: 30px;
-  height: 30px;
-  margin-left: 10px;
-  border-radius: 50px;
-  background-color: black;
+          &.icon-send {
+            margin-left: 10px;
+          }
+        }
+      }
+    }
+  }
 }
 </style>
