@@ -9,13 +9,14 @@ let imgBase64 = ref('')
 const messages = ref([])
 const fileInputRef = ref(null)
 const isRecording = ref(false)
-
-// 图片理解
-const textImageUtil = new TextImageUtil()
+const textLoading = ref(false)
 let tempMessage = {
   role: '',
   content: ''
 }
+// 图片理解
+const textImageUtil = new TextImageUtil()
+
 const handleWebSocketMessage = (data) => {
   data = JSON.parse(data)
   console.log(data)
@@ -113,6 +114,8 @@ onMounted(() => {
 <template>
   <div class="chat-container">
     <div class="chat-messages markdown-body" ref="chatBox">
+      <TextLoading> </TextLoading>
+      <VoiceLoading></VoiceLoading>
       <div
         v-for="(msg, index) in messages"
         :key="index"
@@ -150,7 +153,8 @@ onMounted(() => {
             <img src="../assets/img/上传.png" alt="Upload Icon" />
           </div>
           <div class="icon icon-record" @click="startRecording">
-            <img src="../assets/img/录音.png" alt="Recording Icon" />
+            <img src="../assets/img/录音.png" alt="Recording Icon" v-if="isRecording"/>
+            <VoiceLoading v-else></VoiceLoading>
           </div>
           <textarea
             ref="textareaRef"
@@ -161,7 +165,9 @@ onMounted(() => {
             v-model="question"
           ></textarea>
           <div class="icon icon-send" @click="sendMessage">
-            <img src="../assets/img/发送.png" alt="Send Icon" />
+            
+            <img src="../assets/img/发送.png" alt="Send Icon" v-if="textLoading"/>
+            <TextLoading v-else></TextLoading>
           </div>
         </div>
       </div>

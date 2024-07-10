@@ -18,6 +18,7 @@ const messages = ref([])
 const fileInputRef = ref(null)
 // 增加一个状态来跟踪当前是否在录音
 
+
 const generateAuthParams = () => {
   const curTime = new Date()
   date.value = curTime.toUTCString()

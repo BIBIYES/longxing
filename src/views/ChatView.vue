@@ -1,194 +1,240 @@
 <script setup>
-import { ref, onMounted, watch, nextTick } from 'vue'
-import { marked } from 'marked'
-import { useSessionStore } from '@/stores/sessionStore'
-import { useRouter, useRoute } from 'vue-router'
-import 'github-markdown-css/github-markdown.css'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import CryptoJS from 'crypto-js'
 import { convertBase64 } from '@/utils/imgBase64Util'
-// 路由所需
-const router = useRouter()
-const route = useRoute()
-// 历史数据所需
-const sessionStore = useSessionStore()
-// 用户的问题
-const question = ref('')
-// 页面聊天记录存储数组
-const messages = ref([])
-// 盒子变量，调整盒子高度需要
-const chatBox = ref(null)
-// 输入框变量，调整输入框高度需要
-const textareaRef = ref(null)
-// base64图片存储变量
-let imgBase64 = ref('')
-// 上传文件需要这个
-const fileInputRef = ref(null)
-// 纯文本websocket 对象
-let ws = ref(null)
-let currentMessage = ref(null)
-let messageId = ref(0)
+import VoiceRecognizer from '@/utils/VoiceRecognizer'
+import { useSessionStore } from '@/stores/sessionStore'
+import TextImageUtil from '@/utils/textImageUtil'
+// 消息格式化
+import {convertToHtml} from '@/utils/ContenFormat'
+import 'highlight.js/styles/foundation.css'
+// 常量定义
+const APP_ID = 'c3fbc474'
+const API_KEY = 'f53a5d5b29d3b8c0770b3b51224dbab9'
+const API_SECRET = 'YzgzN2E3NzM2NDVjNWRkMGQwZGE5OTEz'
+const HOST = 'spark-api.xf-yun.com'
 
-const fetchChatData = () => {
-  const sessionId = route.params.id
-  const session = sessionStore.sessions.find((s) => s.id == sessionId)
+// 引用和响应式变量定义
+const date = ref(null)
+const authorization = ref(null)
+const ws = ref(null)
+const question = ref('')
+const imgBase64 = ref('')
+const messages = ref([])
+const fileInputRef = ref(null)
+const isRecording = ref(false)
+const route = useRoute()
+const sessionId = ref(route.params.id)
+const SessionStore = useSessionStore()
+const voiceRecognizer = new VoiceRecognizer()
+// 语音动画控制器
+const isVoiceLoading = ref(false)
+// 发送动画控制器
+const isSendLoading = ref(false)
+
+// 获取历史消息
+const getHistoricalMessages = () => {
+  const session = SessionStore.getSessionById(sessionId.value)
   if (session) {
     messages.value = session.messages
-    messageId.value = session.messages.length
-  }
-
-  const initialMessage = route.query.initialMessage
-  if (initialMessage) {
-    addUserMessage(initialMessage)
+    console.log('获取历史数据成功')
+  } else {
+    console.error(`未找到会话ID为${sessionId.value}的会话.`)
   }
 }
 
-const connect = () => {
-  ws.value = new WebSocket('ws://localhost:8080/ws/1')
+// 生成WebSocket连接URL
+const generateAuthParams = () => {
+  const curTime = new Date()
+  date.value = curTime.toUTCString()
 
-  ws.value.onmessage = (event) => {
-    if (event.data === '|') {
-      if (currentMessage.value) {
-        const completeMessage = {
-          id: currentMessage.value.id,
-          role: currentMessage.value.role,
-          content: currentMessage.value.content.trim()
-        }
-        messages.value = messages.value.map((msg) =>
-          msg.id === completeMessage.id ? completeMessage : msg
-        )
-        currentMessage.value = null
-        scrollToBottom()
-      }
-      return
-    }
+  const tmp = `host: ${HOST}\ndate: ${date.value}\nGET /v3.5/chat HTTP/1.1`
+  const tmpSha = CryptoJS.HmacSHA256(tmp, API_SECRET)
+  const signature = CryptoJS.enc.Base64.stringify(tmpSha)
 
-    if (!currentMessage.value) {
-      currentMessage.value = {
-        id: messageId.value++,
-        role: 'assistant',
-        content: '',
-        content_type: 'text'
-      }
-      messages.value.push(currentMessage.value)
-    }
+  const authorizationOrigin = `api_key="${API_KEY}", algorithm="hmac-sha256", headers="host date request-line", signature="${signature}"`
+  authorization.value = CryptoJS.enc.Base64.stringify(
+    CryptoJS.enc.Utf8.parse(authorizationOrigin)
+  )
+}
 
-    currentMessage.value.content += event.data
-    messages.value = messages.value.map((msg) =>
-      msg.id === currentMessage.value.id ? currentMessage.value : msg
-    )
-    scrollToBottom()
-  }
-
+// 连接WebSocket方法
+const connectWebSocket = () => {
+  const url = `wss://${HOST}/v3.5/chat?authorization=${encodeURIComponent(
+    authorization.value
+  )}&date=${encodeURIComponent(date.value)}&host=${encodeURIComponent(HOST)}`
+  console.log('WebSocket URL:', url)
+  ws.value = new WebSocket(url)
   ws.value.onopen = () => {
-    console.log('连接成功')
+    console.log('WebSocket connection opened')
   }
-
+  ws.value.onmessage = (event) => {
+    handleResultMessage(event.data)
+  }
   ws.value.onclose = () => {
-    console.log('连接关闭，正在尝试重连...')
-    setTimeout(connect, 1000)
+    connectWebSocket()
   }
-
   ws.value.onerror = (error) => {
-    console.error('WebSocket错误: ', error)
+    console.error('WebSocket error:', error)
   }
 }
 
-const sendMessage = () => {
-  if (question.value.trim() === '') return
-  addUserMessage(question.value)
-  question.value = ''
+// 响应缓存消息
+let tempMessage = {
+  role: '',
+  content: ''
 }
 
-const addUserMessage = (messageContent) => {
-  const userMessage = {
-    // id: messageId.value++,
-    role: 'user',
-    content: messageContent,
-    content_type: 'text'
-  }
-  messages.value.push(userMessage)
-  scrollToBottom()
-  sendToServer()
-}
+// 处理返回消息方法
+const handleResultMessage = (message) => {
+  message = JSON.parse(message)
 
-const sendToServer = () => {
-  const messagePayload = {
-    question: messages.value.map((msg) => ({
-      role: msg.role,
-      content: msg.content
-    })),
-    userid: 1
-  }
+  const { str, role } = getMessage(message)
 
-  fetch('http://localhost:8080/api/ai', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(messagePayload)
-  })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error('Network response was not ok')
+  tempMessage.role = role
+  tempMessage.content += str
+
+  switch (message.header.status) {
+    case 0:
+      messages.value.push({ ...tempMessage })
+      break
+    case 1:
+      messages.value[messages.value.length - 1] = { ...tempMessage }
+      break
+    default:
+      messages.value[messages.value.length - 1] = { ...tempMessage }
+      SessionStore.addChatRecord(sessionId.value, messages)
+      handelIsSendLoading()
+      tempMessage = {
+        role: '',
+        content: ''
       }
-    })
-    .catch((error) => {
-      console.error('There was a problem with the fetch operation:', error)
-    })
+      break
+  }
 }
 
-const scrollToBottom = () => {
-  nextTick(() => {
-    if (chatBox.value) {
-      chatBox.value.scrollTop = chatBox.value.scrollHeight
+// 获取响应消息具体信息
+const getMessage = (message) => {
+  try {
+    const str = message.payload.choices.text[0].content
+    const role = message.payload.choices.text[0].role
+    return { str, role }
+  } catch (e) {
+    console.error('大模型响应的数据是错误的' + e)
+  }
+}
+
+// 发送消息载荷
+const sendMessagePayload = {
+  header: {
+    app_id: APP_ID,
+    uid: '12345'
+  },
+  parameter: {
+    chat: {
+      domain: 'generalv3.5',
+      temperature: 0.5,
+      max_tokens: 1024
     }
-  })
-}
-
-const getTheFirstRouteRequest = () => {
-  const initialMessage = route.query.question
-  if (initialMessage) {
-    addUserMessage(initialMessage)
+  },
+  payload: {
+    message: {
+      text: []
+    }
   }
 }
 
-// 输入框高度自适应
-const adjustHeight = () => {
-  if (textareaRef.value) {
-    textareaRef.value.style.height = 'auto'
-    textareaRef.value.style.height = `${textareaRef.value.scrollHeight}px`
+// 发送消息方法
+const sendMessage = () => {
+  // 发送消息动画切换器
+  handelIsSendLoading()
+  if (imgBase64.value) {
+    //如果有图片则是调用图片识别api
+    console.log('检测到图片正在调用图片识别api')
+    sendImgMessage()
+  } else {
+    if (question.value) {
+      console.log('执行普通大模型调用')
+      // 加载历史消息 并过滤掉content_type = image的
+      const newMessage = messages.value.filter(
+        (msg) => msg.content_type !== 'image'
+      )
+      newMessage.push({
+        role: 'user',
+        content: question.value,
+        content_type: 'text'
+      })
+      resetInputData()
+      messages.value = newMessage
+      sendMessagePayload.payload.message.text = newMessage
+
+      ws.value.send(JSON.stringify(sendMessagePayload))
+    } else {
+      console.warn('你没有提问或选择图片。')
+    }
   }
 }
+// 图片理解接口
 
-onMounted(() => {
-  connect()
-  fetchChatData()
+const textImageUtil = new TextImageUtil()
 
-  const waitForConnection = () => {
-    return new Promise((resolve) => {
-      const checkConnection = () => {
-        if (ws.value && ws.value.readyState === WebSocket.OPEN) {
-          resolve()
-        } else {
-          setTimeout(checkConnection, 100)
-        }
+const handleWebSocketMessage = (data) => {
+  data = JSON.parse(data)
+
+  const { content, role } = data.payload.choices.text[0]
+  const status = data.header.status
+
+  tempMessage.role = role
+  tempMessage.content += content
+
+  switch (status) {
+    case 0:
+      messages.value.push({ ...tempMessage })
+      break
+    case 1:
+      messages.value[messages.value.length - 1] = { ...tempMessage }
+      break
+    default:
+      messages.value[messages.value.length - 1] = { ...tempMessage }
+      console.log('动画切换器切换器关闭')
+      handelIsSendLoading()
+      tempMessage = {
+        role: '',
+        content: ''
       }
-      checkConnection()
+      break
+  }
+}
+
+const handleWebSocketError = (error) => {
+  console.error('WebSocket error:', error)
+}
+
+textImageUtil.setOnMessageCallback(handleWebSocketMessage)
+textImageUtil.setOnErrorCallback(handleWebSocketError)
+
+const sendImgMessage = () => {
+  if (question.value || imgBase64.value) {
+    messages.value.push({
+      role: 'user',
+      content: imgBase64.value,
+      content_type: 'image'
     })
+    messages.value.push({
+      role: 'user',
+      content: question.value,
+      content_type: 'text'
+    })
+    textImageUtil.sendMessage(question.value, imgBase64.value)
+    question.value = ''
+    imgBase64.value = ''
+  } else {
+    console.log('你没有提问或选择图片。')
   }
+}
 
-  waitForConnection().then(() => {
-    getTheFirstRouteRequest()
-    router.replace({ query: null })
-  })
-
-  const textarea = document.getElementById('inputTextarea')
-  if (textarea) {
-    textarea.addEventListener('input', adjustHeight)
-  }
-})
-
-watch(() => route.params.id, fetchChatData)
-// 图片处理
+// 处理文件
 const handleFileChange = (event) => {
   convertBase64(event)
     .then((base64String) => {
@@ -198,13 +244,57 @@ const handleFileChange = (event) => {
       console.error('文件读取错误:', error)
     })
 }
+// 发送消息动画控制器
+const handelIsSendLoading = () => {
+  if (isSendLoading.value == false) {
+    isSendLoading.value = true
+    console.log('动画切换器开启')
+  } else {
+    isSendLoading.value = false // 修复错别字
+    console.log('动画切换器关闭')
+  }
+}
+// 重置输入框
+const resetInputData = () => {
+  question.value = ''
+  imgBase64.value = ''
+}
+
+// 触发文件输入
 const triggerFileInput = () => {
   if (fileInputRef.value) {
     fileInputRef.value.click()
   } else {
-    console.error('fileInputRef is not set')
+    console.error('fileInputRef 未设置')
   }
 }
+
+// 录音控制
+const startRecording = () => {
+  if (isRecording.value) {
+    voiceRecognizer.stop()
+    isRecording.value = false
+  } else {
+    voiceRecognizer.start()
+    voiceRecognizer.onResult = (result) => {
+      question.value += result
+    }
+    isRecording.value = true
+  }
+}
+
+// 生命周期钩子
+onMounted(() => {
+  generateAuthParams()
+  connectWebSocket()
+  getHistoricalMessages()
+})
+
+// 监听路由变化
+watch(route, (newRoute) => {
+  sessionId.value = newRoute.params.id
+  getHistoricalMessages()
+})
 </script>
 
 <template>
@@ -216,10 +306,10 @@ const triggerFileInput = () => {
         :class="['message', msg.role]"
       >
         <template v-if="msg.role === 'assistant'">
-          <p>{{ msg.content }}</p>
+          <div v-html="convertToHtml( msg.content )"></div>
         </template>
         <template v-else-if="msg.content_type === 'text'">
-          <p v-html="msg.content"></p>
+          <p>{{ msg.content }}</p>
         </template>
         <template v-else-if="msg.content_type === 'image'">
           <img
@@ -258,7 +348,8 @@ const triggerFileInput = () => {
             v-model="question"
           ></textarea>
           <div class="icon icon-send" @click="sendMessage">
-            <img src="../assets/img/发送.png" alt="Send Icon" />
+            <TextLoading v-if="isSendLoading"></TextLoading>
+            <img src="../assets/img/发送.png" alt="Send Icon" v-else />
           </div>
         </div>
       </div>
@@ -267,140 +358,7 @@ const triggerFileInput = () => {
 </template>
 
 <style lang="less" scoped>
-@import 'github-markdown-css/github-markdown.css';
-
-.chat-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  max-width: 100%;
-  margin: auto;
-  box-sizing: border-box;
-
-  .chat-messages {
-    flex: 1;
-    padding: 20px 40px;
-    overflow-y: auto;
-    background-color: #fafafa;
-    display: flex;
-    flex-direction: column;
-    border-radius: 10px;
-
-    .message {
-      width: auto;
-      max-width: 70%;
-      padding: 10px;
-      margin: 5px 0;
-      border-radius: 10px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      background-color: #ffffff;
-      word-wrap: break-word;
-      position: relative;
-      display: inline-block;
-
-      &.user {
-        align-self: flex-end;
-        background-color: #dcf8c6;
-        border-radius: 10px 10px 0 10px;
-      }
-
-      &.assistant {
-        align-self: flex-start;
-        background-color: #f1f0f0;
-        border-radius: 10px 10px 10px 0;
-      }
-
-      .message-image {
-        width: 200px;
-        border-radius: 10px;
-      }
-    }
-  }
-  //输入框
-  .input-container {
-    width: 100%;
-    padding: 10px;
-    background-color: #fff;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    .input-section {
-      display: flex;
-      flex-direction: column;
-      justify-content: start;
-      width: 50%;
-
-      .image-preview {
-        width: 100px;
-        height: 100px;
-        background-color: red;
-        overflow: hidden;
-        border-radius: 5px;
-        margin-bottom: 5px;
-
-        img {
-          width: 100%;
-        }
-      }
-
-      .input-controls {
-        width: 100%;
-        display: flex;
-        align-items: flex-end;
-        border-radius: 50px;
-        padding: 10px 20px;
-        background-color: #f5f5f5;
-        position: relative;
-
-        textarea {
-          font-family: Arial, Helvetica, sans-serif;
-          font-size: 16px;
-          width: 100%;
-          max-height: 150px;
-          height: auto;
-          border: none;
-          outline: none;
-          background: none;
-          resize: none;
-          padding: 0;
-          box-sizing: border-box;
-          overflow-y: auto;
-          flex-grow: 1;
-          max-height: 300px;
-          min-height: 23px;
-          line-height: 20px;
-        }
-
-        .icon {
-          width: 30px;
-          height: 30px;
-
-          border-radius: 100px;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          cursor: pointer;
-          overflow: hidden;
-
-          img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            filter: invert(100%);
-          }
-
-          &.icon-upload,
-          &.icon-record {
-            margin-right: 10px;
-          }
-
-          &.icon-send {
-            margin-left: 10px;
-          }
-        }
-      }
-    }
-  }
-}
+@import '/src/assets/main.css/ChatView.less';
+@import '/src/assets/css/foundation.css';
 </style>
+

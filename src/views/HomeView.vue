@@ -6,6 +6,21 @@ import { ref, onMounted } from 'vue'
 const sessionStore = useSessionStore()
 const router = useRouter()
 const selectedSessionId = ref(null)
+const sessionList = ref([])
+
+onMounted(async () => {
+  try {
+    const sessions = await sessionStore.getSessionList()
+    if (sessions) {
+      sessionList.value = sessions
+    } else {
+      sessionList.value = []
+    }
+  } catch (error) {
+    console.error('Failed to load session list', error)
+    sessionList.value = []
+  }
+})
 
 const handleSessionClick = (id) => {
   selectedSessionId.value = id
@@ -30,27 +45,31 @@ const handleSessionClick = (id) => {
           龙梦AI绘画
         </div>
       </div>
-      <div
-        v-for="session in sessionStore.sessions"
-        :key="session.id"
-        :class="[
-          'session-item',
-          { selected: session.id === selectedSessionId }
-        ]"
-        @click="handleSessionClick(session.id)"
-      >
-        <span>{{ session.title }}</span>
-        <div class="img-box">
-          <img src="../assets/img/选项-横.png" alt="" />
+      <div v-if="sessionList && sessionList.length > 0">
+        <div
+          v-for="session in sessionList"
+          :key="session.uuid"
+          :class="[
+            'session-item',
+            { selected: session.uuid === selectedSessionId }
+          ]"
+          @click="handleSessionClick(session.uuid)"
+        >
+          <span>{{ session.title }}</span>
+          <div class="img-box">
+            <img src="../assets/img/选项-横.png" alt="" />
+          </div>
         </div>
       </div>
     </div>
     <div class="main-box">
-      <router-view #default="{route,Component}">
-        <transition  :enter-active-class="`animate__animated ${route.meta.transition}`">
-            <component :is="Component"></component>
+      <router-view #default="{ route, Component }">
+        <transition
+          :enter-active-class="`animate__animated ${route.meta.transition}`"
+        >
+          <component :is="Component"></component>
         </transition>
-    </router-view>
+      </router-view>
     </div>
   </div>
 </template>
