@@ -5,34 +5,75 @@ import { useRouter } from 'vue-router'
 import Typed from 'typed.js'
 import { generateUUID } from '@/utils/uuid'
 import { convertBase64 } from '@/utils/imgBase64Util'
-
+import VoiceRecognizer from '@/utils/VoiceRecognizer'
 const textareaRef = ref(null)
 const typewriterElement = ref(null)
 let typed = null
 const question = ref('')
+const voiceRecognizer = new VoiceRecognizer()
 const router = useRouter()
 let imgBase64 = ref('')
 const fileInputRef = ref(null)
 const sessionStore = useSessionStore()
-
+const isVoiceLoading = ref(false)
+const isRecording = ref(false)
 // 发送消息的函数
 const sendMessage = () => {
   const uuid = generateUUID()
-  console.log("生成了一个uuid " + uuid)
+  console.log('生成了一个uuid ' + uuid)
   // 创建一个消息
   sessionStore.createNewMessage(uuid, question.value)
-  if(question){
-    router.push({ name: 'chat', params: { id: uuid }, query: { question: question.value } });
+  if (question && imgBase64) {
+    router.push({
+      name: 'chat',
+      params: { id: uuid },
+      query: { question: question.value, imgBase64: imgBase64.value }
+    })
+  }else if(question){
+    router.push({
+      name: 'chat',
+      params: { id: uuid },
+      query: { question: question.value}
+    })
+  }else{
+    console.warn("你未输入任何东西")
+  }
+}
+const triggerFileInput = () => {
+  if (fileInputRef.value) {
+    fileInputRef.value.click()
+  } else {
+    console.error('fileInputRef 未设置')
+  }
+}
+// 录音控制
+const startRecording = () => {
+  handelIsVoiceLoading()
+  if (isRecording.value) {
+    voiceRecognizer.stop()
+    isRecording.value = false
+  } else {
+    voiceRecognizer.start()
+    voiceRecognizer.onResult = (result) => {
+      question.value += result
+    }
+    isRecording.value = true
+  }
+}
+const handelIsVoiceLoading = () => {
+  if (isVoiceLoading.value) {
+    isVoiceLoading.value = false
+  } else {
+    isVoiceLoading.value = true
   }
 }
 
-onMounted(() => {
-  // 初始化typed.js实例
+const fontAnimation = () => {
   typed = new Typed(typewriterElement.value, {
     strings: [
-      '你好，我是龙梦助手',
-      '一个运行在龙芯平台的多元化GPT',
-      '龙梦助手Chat'
+      'Hi，我是龙梦GPT',
+      '运行在龙芯平台的多元化GPT',
+      '今天有什么可以帮到您？'
     ],
     // 打字速度
     typeSpeed: 100,
@@ -42,6 +83,9 @@ onMounted(() => {
     loop: false,
     showCursor: false
   })
+}
+onMounted(() => {
+  fontAnimation()
 })
 
 // 输入框自适应
@@ -60,46 +104,47 @@ const handleFileChange = (event) => {
       console.error('文件读取错误:', error)
     })
 }
-
 </script>
 
 <template>
-  <div class="container">
-    <div class="title-box">
-      <h1 ref="typewriterElement">你好,我是龙梦GPT🐉</h1>
-      <p>你好，我是龙梦，今天我能帮你什么？</p>
-    </div>
-    <div class="content-box">
-      <div class="row">
-        <div class="item">
-          <div class="title">
-            <img src="../assets/img/编辑.png" alt="" />
-            <span>文本创作</span>
-          </div>
-          <p>创作更生动、更引人入胜</p>
+  <div class="chat-container">
+    <div class="chat-messages-box">
+      <div class="chat-messages-box-content">
+        <div class="logo-box flowing-text">
+          <h3>LOONGSONGPT</h3>
         </div>
-        <div class="item">
-          <div class="title">
-            <img src="../assets/img/日历.png" alt="" />
-            <span>制定计划</span>
-          </div>
-          <p>创意策划助推：发掘潜能与无限可能</p>
+        <div class="content" ref="typewriterElement">
+          <!-- 这里需要typed-->
+          你好我是龙梦GPT
         </div>
-      </div>
-      <div class="row">
-        <div class="item">
-          <div class="title">
-            <img src="../assets/img/灵感.png" alt="" />
-            <span>创意灵感</span>
+        <div class="item-box">
+          <div class="item">
+            <div class="icon">
+              <img src="../assets/img/bulb-on-svgrepo-com.png" alt="" />
+            </div>
+            <div class="text">给您提供一个灵感</div>
           </div>
-          <p>创意策划助推：发掘潜能与无限可能</p>
-        </div>
-        <div class="item">
-          <div class="title">
-            <img src="../assets/img/代码.png" alt="" />
-            <span>代码审查</span>
+          <div class="item">
+            <div class="icon">
+              <img src="../assets/img/code-svgrepo-com.png" alt="" />
+            </div>
+            <div class="text">帮您检查代码</div>
           </div>
-          <p>代码质量把关：审查意见与优化建议</p>
+          <div class="item">
+            <div class="icon">
+              <img
+                src="../assets/img/calendar-lines-pen-svgrepo-com.png"
+                alt=""
+              />
+            </div>
+            <div class="text">帮您制定健身计划</div>
+          </div>
+          <div class="item">
+            <div class="icon">
+              <img src="../assets/img/search.png" alt="" />
+            </div>
+            <div class="text">AIGC帮你生成背景图场景图</div>
+          </div>
         </div>
       </div>
     </div>
@@ -117,10 +162,13 @@ const handleFileChange = (event) => {
             ref="fileInputRef"
           />
           <div class="icon icon-upload" @click="triggerFileInput">
-            <img src="../assets/img/上传.png" alt="Upload Icon" />
+            <!-- <img src="../assets/img/上传.png" alt="Upload Icon" /> -->
+            <el-icon :size="28"><UploadFilled /></el-icon>
           </div>
           <div class="icon icon-record" @click="startRecording">
-            <img src="../assets/img/录音.png" alt="Recording Icon" />
+            <VoiceLoading v-if="isVoiceLoading"></VoiceLoading>
+            <el-icon v-else :size="23"><Microphone /></el-icon>
+            <!-- <img src="../assets/img/录音.png" alt="Recording Icon"  /> -->
           </div>
           <textarea
             ref="textareaRef"
@@ -131,7 +179,7 @@ const handleFileChange = (event) => {
             v-model="question"
           ></textarea>
           <div class="icon icon-send" @click="sendMessage">
-            <img src="../assets/img/发送.png" alt="Send Icon" />
+            <img src="../assets/img/send-alt-svgrepo-com.svg" alt="Send Icon" />
           </div>
         </div>
       </div>
@@ -140,159 +188,5 @@ const handleFileChange = (event) => {
 </template>
 
 <style lang="less" scoped>
-.container {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 20px;
-  box-sizing: border-box;
-
-  .title-box {
-    width: 100%;
-    text-align: center;
-    padding: 20px 0;
-    border-bottom: 2px solid #e0e0e0;
-
-    h1 {
-      height: 50px;
-      margin: 0;
-      font-size: 24px;
-      color: #2c3e50;
-    }
-
-    p {
-      font-size: 16px;
-      color: #7f8c8d;
-    }
-  }
-
-  .content-box {
-    width: 100%;
-    flex: 1;
-    padding: 20px 0;
-    box-sizing: border-box;
-
-    .row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 20px;
-    }
-
-    .item {
-      width: calc(50% - 40px);
-      padding: 20px;
-      margin: 20px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      border-radius: 8px;
-      background-color: #fff;
-      text-align: center;
-      box-sizing: border-box;
-
-      .title {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-bottom: 10px;
-
-        img {
-          width: 24px;
-          height: 24px;
-          margin-right: 10px;
-        }
-
-        span {
-          font-size: 18px;
-          font-weight: bold;
-        }
-      }
-    }
-  }
-  .input-container {
-    width: 100%;
-    padding: 10px;
-    background-color: #fff;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    .input-section {
-      display: flex;
-      flex-direction: column;
-      justify-content: start;
-      width: 50%;
-
-      .image-preview {
-        width: 100px;
-        height: 100px;
-        background-color: red;
-        overflow: hidden;
-        border-radius: 5px;
-        margin-bottom: 5px;
-
-        img {
-          width: 100%;
-        }
-      }
-
-      .input-controls {
-        width: 100%;
-        display: flex;
-        align-items: flex-end;
-        border-radius: 50px;
-        padding: 10px 20px;
-        background-color: #f5f5f5;
-        position: relative;
-
-        textarea {
-          font-family: Arial, Helvetica, sans-serif;
-          font-size: 16px;
-          width: 100%;
-          max-height: 150px;
-          height: auto;
-          border: none;
-          outline: none;
-          background: none;
-          resize: none;
-          padding: 0;
-          box-sizing: border-box;
-          overflow-y: auto;
-          flex-grow: 1;
-          max-height: 300px;
-          min-height: 23px;
-          line-height: 20px;
-        }
-
-        .icon {
-          width: 30px;
-          height: 30px;
-
-          border-radius: 100px;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          cursor: pointer;
-          overflow: hidden;
-
-          img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            filter: invert(100%);
-          }
-
-          &.icon-upload,
-          &.icon-record {
-            margin-right: 10px;
-          }
-
-          &.icon-send {
-            margin-left: 10px;
-          }
-        }
-      }
-    }
-  }
-}
+@import '../assets/css/main/ChatHomeView.less';
 </style>

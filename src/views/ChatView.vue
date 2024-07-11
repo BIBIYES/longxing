@@ -325,6 +325,12 @@ const parseUrl = () => {
   if (route.query.question) {
     if (route.query.imgBase64) {
       imgBase64.value = route.query.imgBase64
+      question.value = route.query.question
+      sendMessage()
+      nextTick(() => {
+        router.replace({ query: null })
+      })
+      return
     }
     question.value = route.query.question
     sendMessage()
@@ -415,7 +421,11 @@ const scrollToBottom = () => {
           ></textarea>
           <div class="icon icon-send" @click="sendMessage">
             <TextLoading v-if="isSendLoading"></TextLoading>
-            <img src="../assets/img/send-alt-svgrepo-com.svg" alt="Send Icon"v-else />
+            <img
+              src="../assets/img/send-alt-svgrepo-com.svg"
+              alt="Send Icon"
+              v-else
+            />
           </div>
         </div>
       </div>
