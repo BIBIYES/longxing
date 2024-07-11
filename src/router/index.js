@@ -6,7 +6,6 @@ import ChatHomeView from '@/views/ChatHomeView.vue'
 import AIPainting from '@/views/AIPaintingView.vue'
 // 测试试图
 import testView from '@/views/testView.vue'
-import testView2 from '@/views/testView2.vue'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -36,11 +35,7 @@ const router = createRouter({
           name: 'test',
           component: testView
         },
-        {
-          path: '/test2',
-          name: 'test2',
-          component: testView2
-        }
+       
       ]
     }
   ]

@@ -37,12 +37,23 @@ export const useSessionStore = defineStore('session', () => {
     return sessionList.value.find(session => session.sessionId === sessionId)
   }
 
+  // 删除特定会话的历史记录
+  const deleteSessionHistory = (sessionId) => {
+    const sessionIndex = sessionList.value.findIndex(session => session.sessionId === sessionId)
+    if (sessionIndex !== -1) {
+      sessionList.value[sessionIndex].messages = []
+    } else {
+      console.error(`未找到会话ID为${sessionId}的会话.`)
+    }
+  }
+
   return {
     sessionList,
     createNewMessage,
     addChatRecord,
     getSessionList,
-    getSessionById
+    getSessionById,
+    deleteSessionHistory
   }
 }, {
   persist: true

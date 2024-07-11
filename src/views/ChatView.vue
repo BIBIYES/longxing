@@ -397,11 +397,13 @@ const scrollToBottom = () => {
             ref="fileInputRef"
           />
           <div class="icon icon-upload" @click="triggerFileInput">
-            <img src="../assets/img/上传.png" alt="Upload Icon" />
+            <!-- <img src="../assets/img/上传.png" alt="Upload Icon" /> -->
+            <el-icon :size="28"><UploadFilled /></el-icon>
           </div>
           <div class="icon icon-record" @click="startRecording">
             <VoiceLoading v-if="isVoiceLoading"></VoiceLoading>
-            <img src="../assets/img/录音.png" alt="Recording Icon" v-else />
+            <el-icon v-else :size="23"><Microphone /></el-icon>
+            <!-- <img src="../assets/img/录音.png" alt="Recording Icon"  /> -->
           </div>
           <textarea
             ref="textareaRef"
@@ -413,7 +415,7 @@ const scrollToBottom = () => {
           ></textarea>
           <div class="icon icon-send" @click="sendMessage">
             <TextLoading v-if="isSendLoading"></TextLoading>
-            <img src="../assets/img/发送.png" alt="Send Icon" v-else />
+            <img src="../assets/img/send-alt-svgrepo-com.svg" alt="Send Icon"v-else />
           </div>
         </div>
       </div>

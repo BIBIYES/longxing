@@ -11,7 +11,15 @@ const sessionStore = useSessionStore()
 
 const selectedSessionId = ref(null)
 const sessionList = ref([])
-
+const menuVisible = ref(false)
+const menuPosition = ref({ top: '0px', left: '0px' })
+const currentSessionId = ref(null)
+// 首页
+const backHome = ()=>{
+  console.log("回到首页");
+  router.push("/chatHome")
+  selectedSessionId.value = -1
+}
 // 获取会话列表的方法
 const fetchSessionList = async () => {
   try {
@@ -41,6 +49,27 @@ const handleSessionClick = (id) => {
   selectedSessionId.value = id
   router.push({ path: `/chat/${id}` })
 }
+
+const showContextMenu = (event, sessionId) => {
+  menuVisible.value = true
+  menuPosition.value = { top: `${event.clientY}px`, left: `${event.clientX}px` }
+  currentSessionId.value = sessionId
+}
+
+const handleMenuOptionClick = (option) => {
+  if (option === 'delete') {
+    // 在这里添加删除会话的逻辑
+    console.log(`Deleting session with id ${currentSessionId.value}`)
+  } else if (option === 'edit') {
+    // 在这里添加修改会话的逻辑
+    console.log(`Editing session with id ${currentSessionId.value}`)
+  }
+  menuVisible.value = false
+}
+
+window.addEventListener('click', () => {
+  menuVisible.value = false
+})
 </script>
 
 <template>
@@ -50,7 +79,20 @@ const handleSessionClick = (id) => {
         <div class="context flowing-text">
           <h4>LOONGSON</h4>
         </div>
-        <div class="img-box" @click="router.push('/chatHome')"></div>
+        <!-- 介绍框 -->
+        <el-popover
+          placement="right-end"
+          effect="dark"
+          title="新建会话"
+          :width="150"
+          trigger="hover"
+          content="点击按钮之后回到主页新建一个会话"
+          :show-after="800"
+        >
+          <template #reference>
+            <div class="img-box" @click="backHome()"></div>
+          </template>
+        </el-popover>
       </div>
       <br />
       <hr />
@@ -71,9 +113,20 @@ const handleSessionClick = (id) => {
           @click="handleSessionClick(session.uuid)"
         >
           <span>{{ session.title }}</span>
-          <div class="img-box">
-            <img src="../assets/img/选项-横.png" alt="" />
-          </div>
+          <el-tooltip
+            class="box-item"
+            effect="dark"
+            content="选项"
+            placement="top"
+            :show-after="800"
+          >
+            <div
+              class="img-box"
+              @click.stop="showContextMenu($event, session.uuid)"
+            >
+              <el-icon><MoreFilled /></el-icon>
+            </div>
+          </el-tooltip>
         </div>
       </div>
     </div>
@@ -85,6 +138,16 @@ const handleSessionClick = (id) => {
           <component :is="Component"></component>
         </transition>
       </router-view>
+    </div>
+    <div
+      v-if="menuVisible"
+      class="context-menu"
+      :style="{ top: menuPosition.top, left: menuPosition.left }"
+    >
+      <ul>
+        <li @click="handleMenuOptionClick('edit')">重命名</li>
+        <li @click="handleMenuOptionClick('delete')">删除</li>
+      </ul>
     </div>
   </div>
 </template>
@@ -183,7 +246,6 @@ const handleSessionClick = (id) => {
   }
 
   .img-box {
-
     width: 20px; // 固定大小以防止缩小
     height: 20px; // 调整高度以匹配按钮
     display: flex;
@@ -193,6 +255,40 @@ const handleSessionClick = (id) => {
 
     img {
       width: 100%;
+    }
+  }
+}
+
+.context-menu {
+  position: absolute;
+  z-index: 1000;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 20px;
+  padding: 8px 0;
+  width: 120px;
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    li {
+      padding: 8px 12px;
+      cursor: pointer;
+      transition: background 0.3s;
+
+      &:hover {
+        background: #f0f0f0;
+      }
+
+      &:first-child {
+        border-bottom: 1px solid #eee;
+      }
+
+      &:last-child {
+        color: red;
+      }
     }
   }
 }
