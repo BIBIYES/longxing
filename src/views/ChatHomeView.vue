@@ -4,6 +4,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Typed from 'typed.js'
 import { generateUUID } from '@/utils/uuid'
+import { convertBase64 } from '@/utils/imgBase64Util'
 
 const textareaRef = ref(null)
 const typewriterElement = ref(null)
@@ -20,7 +21,9 @@ const sendMessage = () => {
   console.log("生成了一个uuid " + uuid)
   // 创建一个消息
   sessionStore.createNewMessage(uuid, question.value)
-  router.push(`chat/${uuid}`)
+  if(question){
+    router.push({ name: 'chat', params: { id: uuid }, query: { question: question.value } });
+  }
 }
 
 onMounted(() => {

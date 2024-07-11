@@ -1,38 +1,46 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, onMounted, watch, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import CryptoJS from 'crypto-js'
 import { convertBase64 } from '@/utils/imgBase64Util'
 import VoiceRecognizer from '@/utils/VoiceRecognizer'
 import { useSessionStore } from '@/stores/sessionStore'
 import TextImageUtil from '@/utils/textImageUtil'
 // 消息格式化
-import {convertToHtml} from '@/utils/ContenFormat'
-import 'highlight.js/styles/foundation.css'
+import { convertToHtml } from '@/utils/ContenFormat'
+import 'github-markdown-css/github-markdown.css'
 // 常量定义
 const APP_ID = 'c3fbc474'
 const API_KEY = 'f53a5d5b29d3b8c0770b3b51224dbab9'
 const API_SECRET = 'YzgzN2E3NzM2NDVjNWRkMGQwZGE5OTEz'
 const HOST = 'spark-api.xf-yun.com'
-
+// 实例化
+const route = useRoute()
+const router = useRouter()
+const SessionStore = useSessionStore()
+const ws = ref(null)
 // 引用和响应式变量定义
 const date = ref(null)
 const authorization = ref(null)
-const ws = ref(null)
+// 输入框用户的问题
 const question = ref('')
+// 图片的Base64信息
 const imgBase64 = ref('')
+// 聊天记录
 const messages = ref([])
+// 文件
 const fileInputRef = ref(null)
+// 在录音吗？
 const isRecording = ref(false)
-const route = useRoute()
+//当前页面会话id
 const sessionId = ref(route.params.id)
-const SessionStore = useSessionStore()
 const voiceRecognizer = new VoiceRecognizer()
 // 语音动画控制器
 const isVoiceLoading = ref(false)
 // 发送动画控制器
 const isSendLoading = ref(false)
-
+// 聊天盒子获取
+const chatBox = ref(null)
 // 获取历史消息
 const getHistoricalMessages = () => {
   const session = SessionStore.getSessionById(sessionId.value)
@@ -59,25 +67,38 @@ const generateAuthParams = () => {
   )
 }
 
-// 连接WebSocket方法
 const connectWebSocket = () => {
-  const url = `wss://${HOST}/v3.5/chat?authorization=${encodeURIComponent(
-    authorization.value
-  )}&date=${encodeURIComponent(date.value)}&host=${encodeURIComponent(HOST)}`
-  console.log('WebSocket URL:', url)
-  ws.value = new WebSocket(url)
-  ws.value.onopen = () => {
-    console.log('WebSocket connection opened')
-  }
-  ws.value.onmessage = (event) => {
-    handleResultMessage(event.data)
-  }
-  ws.value.onclose = () => {
-    connectWebSocket()
-  }
-  ws.value.onerror = (error) => {
-    console.error('WebSocket error:', error)
-  }
+  return new Promise((resolve, reject) => {
+    const url = `wss://${HOST}/v3.5/chat?authorization=${encodeURIComponent(
+      authorization.value
+    )}&date=${encodeURIComponent(date.value)}&host=${encodeURIComponent(HOST)}`
+    console.log('WebSocket URL:', url)
+    ws.value = new WebSocket(url)
+
+    ws.value.onopen = () => {
+      console.log('WebSocket connection opened')
+      resolve()
+    }
+
+    ws.value.onmessage = (event) => {
+      handleResultMessage(event.data)
+    }
+
+    ws.value.onclose = () => {
+      connectWebSocket()
+        .then(() => {
+          console.log('WebSocket reconnected')
+        })
+        .catch((error) => {
+          console.error('WebSocket reconnection error:', error)
+        })
+    }
+
+    ws.value.onerror = (error) => {
+      console.error('WebSocket error:', error)
+      reject(error)
+    }
+  })
 }
 
 // 响应缓存消息
@@ -105,6 +126,7 @@ const handleResultMessage = (message) => {
     default:
       messages.value[messages.value.length - 1] = { ...tempMessage }
       SessionStore.addChatRecord(sessionId.value, messages)
+      console.log('完成的消息响应' + JSON.stringify(tempMessage))
       handelIsSendLoading()
       tempMessage = {
         role: '',
@@ -147,16 +169,13 @@ const sendMessagePayload = {
 
 // 发送消息方法
 const sendMessage = () => {
-  // 发送消息动画切换器
   handelIsSendLoading()
   if (imgBase64.value) {
-    //如果有图片则是调用图片识别api
     console.log('检测到图片正在调用图片识别api')
     sendImgMessage()
   } else {
     if (question.value) {
       console.log('执行普通大模型调用')
-      // 加载历史消息 并过滤掉content_type = image的
       const newMessage = messages.value.filter(
         (msg) => msg.content_type !== 'image'
       )
@@ -165,16 +184,25 @@ const sendMessage = () => {
         content: question.value,
         content_type: 'text'
       })
+
+      // 添加消息到 messages 数组
+      messages.value.push({
+        role: 'user',
+        content: question.value,
+        content_type: 'text'
+      })
+
       resetInputData()
-      messages.value = newMessage
       sendMessagePayload.payload.message.text = newMessage
 
+      // 发送消息
       ws.value.send(JSON.stringify(sendMessagePayload))
     } else {
       console.warn('你没有提问或选择图片。')
     }
   }
 }
+
 // 图片理解接口
 
 const textImageUtil = new TextImageUtil()
@@ -254,6 +282,14 @@ const handelIsSendLoading = () => {
     console.log('动画切换器关闭')
   }
 }
+// 录音动画控制器
+const handelIsVoiceLoading = () => {
+  if (isVoiceLoading.value) {
+    isVoiceLoading.value = false
+  } else {
+    isVoiceLoading.value = true
+  }
+}
 // 重置输入框
 const resetInputData = () => {
   question.value = ''
@@ -271,6 +307,7 @@ const triggerFileInput = () => {
 
 // 录音控制
 const startRecording = () => {
+  handelIsVoiceLoading()
   if (isRecording.value) {
     voiceRecognizer.stop()
     isRecording.value = false
@@ -283,11 +320,28 @@ const startRecording = () => {
   }
 }
 
+// 解析url
+const parseUrl = () => {
+  if (route.query.question) {
+    if (route.query.imgBase64) {
+      imgBase64.value = route.query.imgBase64
+    }
+    question.value = route.query.question
+    sendMessage()
+    nextTick(() => {
+      router.replace({ query: null })
+    })
+  }
+}
 // 生命周期钩子
-onMounted(() => {
+onMounted(async () => {
   generateAuthParams()
-  connectWebSocket()
   getHistoricalMessages()
+  await connectWebSocket()
+  parseUrl()
+  nextTick(() => {
+    scrollToBottom()
+  })
 })
 
 // 监听路由变化
@@ -295,6 +349,15 @@ watch(route, (newRoute) => {
   sessionId.value = newRoute.params.id
   getHistoricalMessages()
 })
+// 页面滚动到底部
+const scrollToBottom = () => {
+  nextTick(() => {
+    if (chatBox.value) {
+      chatBox.value.scrollTop = chatBox.value.scrollHeight
+    }
+    console.log('页面已经滚到到底部')
+  })
+}
 </script>
 
 <template>
@@ -306,7 +369,7 @@ watch(route, (newRoute) => {
         :class="['message', msg.role]"
       >
         <template v-if="msg.role === 'assistant'">
-          <div v-html="convertToHtml( msg.content )"></div>
+          <div v-html="convertToHtml(msg.content)"></div>
         </template>
         <template v-else-if="msg.content_type === 'text'">
           <p>{{ msg.content }}</p>
@@ -337,7 +400,8 @@ watch(route, (newRoute) => {
             <img src="../assets/img/上传.png" alt="Upload Icon" />
           </div>
           <div class="icon icon-record" @click="startRecording">
-            <img src="../assets/img/录音.png" alt="Recording Icon" />
+            <VoiceLoading v-if="isVoiceLoading"></VoiceLoading>
+            <img src="../assets/img/录音.png" alt="Recording Icon" v-else />
           </div>
           <textarea
             ref="textareaRef"
@@ -358,7 +422,5 @@ watch(route, (newRoute) => {
 </template>
 
 <style lang="less" scoped>
-@import '/src/assets/main.css/ChatView.less';
-@import '/src/assets/css/foundation.css';
+@import '/src/assets/css/main/ChatView.less';
 </style>
-

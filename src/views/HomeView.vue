@@ -1,14 +1,19 @@
 <script setup>
 import { useSessionStore } from '@/stores/sessionStore'
-import { useRouter } from 'vue-router'
-import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { ref, onMounted, watch } from 'vue'
 
-const sessionStore = useSessionStore()
+// 实例
 const router = useRouter()
+const route = useRoute()
+// 存会话id的
+const sessionStore = useSessionStore()
+
 const selectedSessionId = ref(null)
 const sessionList = ref([])
 
-onMounted(async () => {
+// 获取会话列表的方法
+const fetchSessionList = async () => {
   try {
     const sessions = await sessionStore.getSessionList()
     if (sessions) {
@@ -20,6 +25,16 @@ onMounted(async () => {
     console.error('Failed to load session list', error)
     sessionList.value = []
   }
+}
+
+// 组件挂载时获取会话列表
+onMounted(async () => {
+  await fetchSessionList()
+})
+
+// 监听路由变化时获取会话列表
+watch(route, async () => {
+  await fetchSessionList()
 })
 
 const handleSessionClick = (id) => {
@@ -74,7 +89,7 @@ const handleSessionClick = (id) => {
   </div>
 </template>
 
-<style scoped>
+<style lang="less" scoped>
 /* AI绘画流光渐变 */
 .flowing-text {
   font-size: 16px;
@@ -87,26 +102,30 @@ const handleSessionClick = (id) => {
   display: inline-block;
   cursor: pointer;
   transition: background-position 0.5s ease;
+
+  &:hover {
+    background-position: 100% 0;
+  }
 }
 
-.flowing-text:hover {
-  background-position: 100% 0;
-}
 .container {
   display: flex;
 }
+
 .sidebar-box {
   width: 15vw;
   height: 100vh;
   background-color: #ffffff;
   padding: 5px;
-  border-right: #e0e0e0 1px solid;
+  border-right: 1px solid #e0e0e0;
 }
+
 .main-box {
   width: 100%;
   height: 100vh;
   padding: 10px;
 }
+
 .title {
   width: 100%;
   height: 60px;
@@ -116,18 +135,22 @@ const handleSessionClick = (id) => {
   justify-content: space-around;
   align-items: center;
   padding: 5px;
+
+  .img-box {
+    min-width: 30px;
+    width: 30px;
+    height: 30px;
+    background: url('../assets/img/创建任务.png') no-repeat center center;
+    background-size: cover;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background-color: #ffffff;
+    }
+  }
 }
-.title .img-box {
-  width: 30px;
-  height: 30px;
-  background: url('../assets/img/创建任务.png') no-repeat center center;
-  background-size: cover;
-  border-radius: 10px;
-  transition: all 0.3s ease;
-}
-.title .img-box:hover {
-  background-color: #ffffff;
-}
+
 .session-item {
   width: 90%;
   height: 40px;
@@ -141,28 +164,36 @@ const handleSessionClick = (id) => {
   font-size: 13px;
   padding: 7px;
   transition: background-color 0.3s ease;
-}
-.session-item:hover {
-  background-color: rgb(210, 210, 210);
-}
-.session-item.selected {
-  background-color: rgb(200, 200, 200);
-}
-.session-item span {
-  display: inline-block;
-  max-width: 100%;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-.session-item .img-box {
-  width: 10%;
-  height: 40px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-.session-item .img-box img {
-  width: 100%;
+
+  &:hover {
+    background-color: rgb(210, 210, 210);
+  }
+
+  &.selected {
+    background-color: rgb(200, 200, 200);
+  }
+
+  span {
+    display: inline-block;
+    max-width: calc(100% - 40px); // 调整以防止与按钮重叠
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    cursor: pointer;
+  }
+
+  .img-box {
+
+    width: 20px; // 固定大小以防止缩小
+    height: 20px; // 调整高度以匹配按钮
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer; // 添加鼠标指针
+
+    img {
+      width: 100%;
+    }
+  }
 }
 </style>
