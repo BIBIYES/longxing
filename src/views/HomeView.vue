@@ -2,7 +2,7 @@
 import { useSessionStore } from '@/stores/sessionStore'
 import { useRouter, useRoute } from 'vue-router'
 import { ref, onMounted, watch } from 'vue'
-
+import {info} from '@/utils/messageUtil'
 // 实例
 const router = useRouter()
 const route = useRoute()
@@ -70,6 +70,10 @@ const handleMenuOptionClick = (option) => {
 window.addEventListener('click', () => {
   menuVisible.value = false
 })
+onMounted(()=>{
+  info("更新公告","1.更新了主页\n2.更新一些icon\n3.修复了在主页勾选图片，不跳转的功能")
+})
+
 </script>
 
 <template>
@@ -181,6 +185,7 @@ window.addEventListener('click', () => {
   background-color: #ffffff;
   padding: 5px;
   border-right: 1px solid #e0e0e0;
+  resize: both;
 }
 
 .main-box {

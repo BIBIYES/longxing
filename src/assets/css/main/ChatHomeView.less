@@ -49,14 +49,27 @@
 
       .logo-box {
         display: flex;
+        position: relative;
         justify-content: center;
         align-items: center;
-        width: 400px;
+        width: max-content;
         height: 100px;
         font-size: 33px;
         color: #333;
+        z-index: 0;
+        overflow: hidden;
+        // border: 1px solid black;
       }
-
+      .logo-box::before {
+        content: '';
+        width: 100px;
+        height: 10px;
+        position: absolute;
+        background: linear-gradient(to right, #ee7752, #e73c7e);
+        border-radius: 15px;
+        bottom: 0;
+        left: 0;
+      }
       .content {
         display: flex;
         justify-content: center;
