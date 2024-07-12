@@ -180,6 +180,11 @@ const sendMessage = () => {
         (msg) => msg.content_type !== 'image'
       )
       newMessage.push({
+        role: 'system',
+        content: '每次你回复我都尽量多使用emoji表情，来描述对话的心情,使用markdown格式为统一格式',
+        content_type: 'text'
+      })
+      newMessage.push({
         role: 'user',
         content: question.value,
         content_type: 'text'
