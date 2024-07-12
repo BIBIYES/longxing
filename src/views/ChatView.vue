@@ -181,7 +181,7 @@ const sendMessage = () => {
       )
       newMessage.push({
         role: 'system',
-        content: '每次你回复我都尽量多使用emoji表情，来描述对话的心情,使用markdown格式为统一格式',
+        content: '每次你回复我都尽量多使用emoji表情，来描述对话的心情,使用markdown格式为统一格式,你要记得你叫龙梦GPT是运行在龙芯平台的大语言模型',
         content_type: 'text'
       })
       newMessage.push({
