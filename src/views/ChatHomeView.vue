@@ -9,34 +9,38 @@ import VoiceRecognizer from '@/utils/VoiceRecognizer'
 const textareaRef = ref(null)
 const typewriterElement = ref(null)
 let typed = null
-const question = ref('')
+const question = ref(null)
 const voiceRecognizer = new VoiceRecognizer()
 const router = useRouter()
-let imgBase64 = ref('')
+let imgBase64 = ref(null)
 const fileInputRef = ref(null)
 const sessionStore = useSessionStore()
 const isVoiceLoading = ref(false)
 const isRecording = ref(false)
 // 发送消息的函数
 const sendMessage = () => {
-  const uuid = generateUUID()
-  console.log('生成了一个uuid ' + uuid)
-  // 创建一个消息
-  sessionStore.createNewMessage(uuid, question.value)
-  if (question && imgBase64) {
+  if (question.value && imgBase64.value) {
+    const uuid = generateUUID()
+    console.log('生成了一个uuid ' + uuid)
+    // 创建一个消息
+    sessionStore.createNewMessage(uuid, question.value)
     router.push({
       name: 'chat',
       params: { id: uuid },
       query: { question: question.value, imgBase64: imgBase64.value }
     })
-  }else if(question){
+  } else if (question.value) {
+    const uuid = generateUUID()
+    console.log('生成了一个uuid ' + uuid)
+    // 创建一个消息
+    sessionStore.createNewMessage(uuid, question.value)
     router.push({
       name: 'chat',
       params: { id: uuid },
-      query: { question: question.value}
+      query: { question: question.value }
     })
-  }else{
-    console.warn("你未输入任何东西")
+  } else {
+    console.warn('你未输入任何东西')
   }
 }
 const triggerFileInput = () => {
@@ -174,7 +178,7 @@ const handleFileChange = (event) => {
             ref="textareaRef"
             id="inputTextarea"
             rows="1"
-            placeholder="给“龙萌说些什么”发送消息"
+            placeholder="给“龙梦说些什么”发送消息"
             @input="adjustHeight"
             v-model="question"
           ></textarea>

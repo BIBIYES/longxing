@@ -35,7 +35,6 @@ const router = createRouter({
           name: 'test',
           component: testView
         },
-       
       ]
     }
   ]

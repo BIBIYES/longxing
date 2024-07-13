@@ -23,7 +23,7 @@ const ws = ref(null)
 const date = ref(null)
 const authorization = ref(null)
 // 输入框用户的问题
-const question = ref('')
+const question = ref(null)
 // 图片的Base64信息
 const imgBase64 = ref('')
 // 聊天记录
@@ -41,6 +41,9 @@ const isVoiceLoading = ref(false)
 const isSendLoading = ref(false)
 // 聊天盒子获取
 const chatBox = ref(null)
+// 输入框
+const textareaRef = ref(null)
+const placeholderText = ref("给“龙梦说些什么”发送消息")
 // 获取历史消息
 const getHistoricalMessages = () => {
   const session = SessionStore.getSessionById(sessionId.value)
@@ -169,21 +172,24 @@ const sendMessagePayload = {
 
 // 发送消息方法
 const sendMessage = () => {
-  handelIsSendLoading()
   if (imgBase64.value) {
     console.log('检测到图片正在调用图片识别api')
+    handelIsSendLoading()
     sendImgMessage()
   } else {
-    if (question.value) {
+    if (question.value && question.value != ' ') {
+      handelIsSendLoading()
+      console.log(question.value)
       console.log('执行普通大模型调用')
+      newMessage.push({
+        role: 'system',
+        content:
+          '每次你回复我都尽量多使用emoji表情，来描述对话的心情,使用markdown格式为统一格式,你要记得你叫龙梦GPT是运行在龙芯平台的大语言模型，是傅顺团队制作，如果我要求画图，请你指引我点击左侧的龙梦ai绘画选项，需要用户手动去点击',
+        content_type: 'text'
+      })
       const newMessage = messages.value.filter(
         (msg) => msg.content_type !== 'image'
       )
-      newMessage.push({
-        role: 'system',
-        content: '每次你回复我都尽量多使用emoji表情，来描述对话的心情,使用markdown格式为统一格式,你要记得你叫龙梦GPT是运行在龙芯平台的大语言模型',
-        content_type: 'text'
-      })
       newMessage.push({
         role: 'user',
         content: question.value,
@@ -289,6 +295,7 @@ const handelIsSendLoading = () => {
 }
 // 录音动画控制器
 const handelIsVoiceLoading = () => {
+  
   if (isVoiceLoading.value) {
     isVoiceLoading.value = false
   } else {
@@ -316,15 +323,35 @@ const startRecording = () => {
   if (isRecording.value) {
     voiceRecognizer.stop()
     isRecording.value = false
+    placeholderText.value = "给“龙梦说些什么”发送消息"
   } else {
     voiceRecognizer.start()
     voiceRecognizer.onResult = (result) => {
       question.value += result
     }
+    placeholderText.value = "正在识别你的语言.........."
     isRecording.value = true
   }
 }
-
+// 调整输入框高度
+const adjustHeight = () => {
+  const textarea = textareaRef.value
+  textarea.style.height = '25px' // Reset height to 25px to calculate new height
+  textarea.style.height = textarea.scrollHeight + 'px' // Set new height based on scrollHeight
+}
+watch(question, (newValue, oldValue) => {
+  adjustHeight()
+  console.log('调整高度')
+})
+// 处理键盘事件
+const handleKeyUp = (event) => {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    sendMessage()
+    nextTick(() => {
+      adjustHeight()
+    })
+  }
+}
 // 解析url
 const parseUrl = () => {
   if (route.query.question) {
@@ -383,7 +410,7 @@ const scrollToBottom = () => {
           <div v-html="convertToHtml(msg.content)"></div>
         </template>
         <template v-else-if="msg.content_type === 'text'">
-          <p>{{ msg.content }}</p>
+          <p style="margin-bottom: 0">{{ msg.content }}</p>
         </template>
         <template v-else-if="msg.content_type === 'image'">
           <img
@@ -420,8 +447,9 @@ const scrollToBottom = () => {
             ref="textareaRef"
             id="inputTextarea"
             rows="1"
-            placeholder="给“龙萌说些什么”发送消息"
+            :placeholder="placeholderText"
             @input="adjustHeight"
+            @keyup="handleKeyUp"
             v-model="question"
           ></textarea>
           <div class="icon icon-send" @click="sendMessage">

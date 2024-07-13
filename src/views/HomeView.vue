@@ -12,7 +12,9 @@ const sessionStore = useSessionStore()
 const selectedSessionId = ref(null)
 const sessions = ref([])
 const activeOptionBox = ref(null) // 用于存储当前显示选项框的会话ID
-
+const clickToClose = ()=>{
+  activeOptionBox.value = null
+}
 const goHome = () => {
   router.push('/chatHome')
   selectedSessionId.value = -1
@@ -31,8 +33,7 @@ const loadSessions = async () => {
 onMounted(() => {
   loadSessions()
   info(
-    '更新公告',
-    '1.更新了主页\n2.更新一些icon\n3.修复了在主页勾选图片，不跳转的功能'
+    "欢迎使用龙梦GPT,目前处于测试阶段，当您看到这个消息，说明您被邀请测试，非常感谢您，请您毫不留情的批评我们，这是对我们最大的鼓励-我和评委站一队项目组"
   )
 })
 
@@ -55,12 +56,13 @@ const renameSession = (id) => {
 const deleteSession = (id) => {
   console.log(`Deleting session ${id}`)
   sessionStore.deleteSessionHistory(id)
+  router.push('/chatHome')
   loadSessions()
 }
 </script>
 
 <template>
-  <div class="container">
+  <div class="container" @click="clickToClose()">
     <div class="sidebar">
       <div class="title" @click="goHome">
         <div class="img-box">
@@ -89,15 +91,15 @@ const deleteSession = (id) => {
           <div class="options-box" v-if="activeOptionBox === session.uuid">
             <div class="option-item" @click.stop="renameSession(session.uuid)">
               <div class="img-box">
-                <img src="" alt="" />
+                <img src="../assets/img/rename-svgrepo-com.png" alt="" />
               </div>
               <h4>重命名</h4>
             </div>
             <div class="option-item" @click.stop="deleteSession(session.uuid)">
               <div class="img-box">
-                <img src="" alt="" />
+                <img src="../assets/img/garbage-svgrepo-com.png" alt="" />
               </div>
-              <h4>删除</h4>
+              <h4 style="color: #fe5d5d">删除</h4>
             </div>
           </div>
           <el-tooltip
@@ -214,7 +216,24 @@ const deleteSession = (id) => {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     z-index: 1;
+    .option-item {
+      width: 100%;
+      height: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      .img-box {
+        height: 10px;
+      }
+      h4 {
+        width: 40px;
+      }
+      &:hover {
+        background-color: #e0e0e0;
+      }
+    }
   }
 
   &:hover {
