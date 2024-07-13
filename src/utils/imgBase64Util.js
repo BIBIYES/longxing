@@ -9,7 +9,6 @@ export const convertBase64 = (event) => {
 
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    
     reader.onload = (event) => {
       // 获取完整的 base64 编码
       const fullBase64 = event.target.result;
