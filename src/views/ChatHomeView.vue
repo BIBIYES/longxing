@@ -24,6 +24,15 @@ const sendMessage = () => {
     console.log('生成了一个uuid ' + uuid)
     // 创建一个消息
     sessionStore.createNewMessage(uuid, question.value)
+    // 添加默认限定词
+    // const message = []
+    // message.push({
+    //   role: 'system',
+    //   content:
+    //     '每次你回复我都尽量多使用emoji表情，来描述对话的心情,使用markdown格式为统一格式,你要记得你叫龙梦GPT是运行在龙芯平台的大语言模型，是傅顺团队制作，如果我要求画图，请你指引我点击左侧的龙梦ai绘画选项，需要用户手动去点击',
+    //   content_type: 'text'
+    // })
+    // sessionStore.addChatRecord(uuid, message)
     router.push({
       name: 'chat',
       params: { id: uuid },

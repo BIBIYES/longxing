@@ -43,7 +43,7 @@ const isSendLoading = ref(false)
 const chatBox = ref(null)
 // 输入框
 const textareaRef = ref(null)
-const placeholderText = ref("给“龙梦说些什么”发送消息")
+const placeholderText = ref('给“龙梦说些什么”发送消息')
 // 获取历史消息
 const getHistoricalMessages = () => {
   const session = SessionStore.getSessionById(sessionId.value)
@@ -181,22 +181,30 @@ const sendMessage = () => {
       handelIsSendLoading()
       console.log(question.value)
       console.log('执行普通大模型调用')
+      // 定义一个空的数组 newMessage
+      let newMessage = []
+
+      // 向 newMessage 数组中追加一个系统消息
       newMessage.push({
         role: 'system',
         content:
           '每次你回复我都尽量多使用emoji表情，来描述对话的心情,使用markdown格式为统一格式,你要记得你叫龙梦GPT是运行在龙芯平台的大语言模型，是傅顺团队制作，如果我要求画图，请你指引我点击左侧的龙梦ai绘画选项，需要用户手动去点击',
         content_type: 'text'
       })
-      const newMessage = messages.value.filter(
-        (msg) => msg.content_type !== 'image'
+
+      // 从 messages 中过滤出 content_type 为 'text' 的消息并追加到 newMessage
+      newMessage = newMessage.concat(
+        messages.value.filter((msg) => msg.content_type === 'text')
       )
+
+      // 向 newMessage 数组中追加用户的问题
       newMessage.push({
         role: 'user',
         content: question.value,
         content_type: 'text'
       })
 
-      // 添加消息到 messages 数组
+      // 添加用户的问题到 messages 数组
       messages.value.push({
         role: 'user',
         content: question.value,
@@ -295,7 +303,6 @@ const handelIsSendLoading = () => {
 }
 // 录音动画控制器
 const handelIsVoiceLoading = () => {
-  
   if (isVoiceLoading.value) {
     isVoiceLoading.value = false
   } else {
@@ -323,13 +330,13 @@ const startRecording = () => {
   if (isRecording.value) {
     voiceRecognizer.stop()
     isRecording.value = false
-    placeholderText.value = "给“龙梦说些什么”发送消息"
+    placeholderText.value = '给“龙梦说些什么”发送消息'
   } else {
     voiceRecognizer.start()
     voiceRecognizer.onResult = (result) => {
       question.value += result
     }
-    placeholderText.value = "正在识别你的语言.........."
+    placeholderText.value = '正在识别你的语言..........'
     isRecording.value = true
   }
 }
