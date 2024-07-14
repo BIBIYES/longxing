@@ -11,6 +11,9 @@ importers:
       '@element-plus/icons-vue':
         specifier: ^2.3.1
         version: 2.3.1(vue@3.4.27)
+      '@muguilin/xf-voice-dictation':
+        specifier: ^1.0.1
+        version: 1.0.1
       axios:
         specifier: ^1.7.2
         version: 1.7.2
@@ -250,6 +253,9 @@ packages:
 
   '@jridgewell/sourcemap-codec@1.4.15':
     resolution: {integrity: sha512-eF2rxCRulEKXHTRiDrDy6erMYWqNw4LPdQ8UQA4huuxaQsVeRPFl2oM8oDGxMFhJUWZf9McpLtJasDDZb/Bpeg==}
+
+  '@muguilin/xf-voice-dictation@1.0.1':
+    resolution: {integrity: sha512-mkiTpjSbwJHnnLv4Gi6lBlcINLJRMZ50M7y3in8cJ4LIIHjGk4bu1K2EsmzLTE2+hWCbULzT/9T+D4yu4JuAFQ==}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -1154,6 +1160,8 @@ snapshots:
   '@floating-ui/utils@0.2.2': {}
 
   '@jridgewell/sourcemap-codec@1.4.15': {}
+
+  '@muguilin/xf-voice-dictation@1.0.1': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:

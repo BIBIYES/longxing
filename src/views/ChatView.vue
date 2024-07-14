@@ -6,6 +6,7 @@ import { convertBase64 } from '@/utils/imgBase64Util'
 import VoiceRecognizer from '@/utils/VoiceRecognizer'
 import { useSessionStore } from '@/stores/sessionStore'
 import TextImageUtil from '@/utils/textImageUtil'
+import { XfVoiceDictation } from '@muguilin/xf-voice-dictation'
 // 消息格式化
 import { convertToHtml } from '@/utils/ContenFormat'
 import 'github-markdown-css/github-markdown.css'
@@ -34,7 +35,7 @@ const fileInputRef = ref(null)
 const isRecording = ref(false)
 //当前页面会话id
 const sessionId = ref(route.params.id)
-const voiceRecognizer = new VoiceRecognizer()
+
 // 语音动画控制器
 const isVoiceLoading = ref(false)
 // 发送动画控制器
@@ -313,22 +314,46 @@ const triggerFileInput = () => {
   }
 }
 
+// 语音识别
+let times = null
+
+// 实例化迅飞语音听写（流式版）WebAPI
+const originalConsoleLog = console.log
+console.log = function () {}
+const xfVoice = new XfVoiceDictation({
+  APPID: 'c3fbc474',
+  APISecret: 'YzgzN2E3NzM2NDVjNWRkMGQwZGE5OTEz',
+  APIKey: 'f53a5d5b29d3b8c0770b3b51224dbab9',
+
+  onWillStatusChange: function (oldStatus, newStatus) {},
+
+  onTextChange: function (text) {
+    question.value = text
+
+    if (text) {
+      clearTimeout(times)
+      times = setTimeout(() => xfVoice.stop(), 3000)
+    }
+  },
+
+  onError: function (error) {}
+})
+console.log = originalConsoleLog
 // 录音控制
 const startRecording = () => {
+  // 动画切换器
   handelIsVoiceLoading()
   if (isRecording.value) {
-    voiceRecognizer.stop()
+    // 关闭语音识别
+    xfVoice.stop()
     isRecording.value = false
-    placeholderText.value = '给“龙梦说些什么”发送消息'
   } else {
-    voiceRecognizer.start()
-    voiceRecognizer.onResult = (result) => {
-      question.value += result
-    }
-    placeholderText.value = '正在识别你的语言..........'
+    xfVoice.start()
+    // 开始语音识别
     isRecording.value = true
   }
 }
+
 // 调整输入框高度
 const adjustHeight = () => {
   const textarea = textareaRef.value

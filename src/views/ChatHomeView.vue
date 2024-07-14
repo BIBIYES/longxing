@@ -6,11 +6,11 @@ import Typed from 'typed.js'
 import { generateUUID } from '@/utils/uuid'
 import { convertBase64 } from '@/utils/imgBase64Util'
 import VoiceRecognizer from '@/utils/VoiceRecognizer'
+import { XfVoiceDictation } from '@muguilin/xf-voice-dictation'
 const textareaRef = ref(null)
 const typewriterElement = ref(null)
 let typed = null
 const question = ref(null)
-const voiceRecognizer = new VoiceRecognizer()
 const router = useRouter()
 let imgBase64 = ref(null)
 const fileInputRef = ref(null)
@@ -53,28 +53,57 @@ const triggerFileInput = () => {
     console.error('fileInputRef 未设置')
   }
 }
+
+// 语音识别文字切换器
+const handelIsVoiceLoading = () => {
+  if (isVoiceLoading.value) {
+    placeholderText.value = '给“龙梦说些什么”发送消息'
+    isVoiceLoading.value = false
+  } else {
+    placeholderText.value = '龙梦正在听......'
+    isVoiceLoading.value = true
+  }
+}
+// 语音识别
+let times = null
+
+// 实例化迅飞语音听写（流式版）WebAPI
+const originalConsoleLog = console.log
+console.log = function () {}
+const xfVoice = new XfVoiceDictation({
+  APPID: 'c3fbc474',
+  APISecret: 'YzgzN2E3NzM2NDVjNWRkMGQwZGE5OTEz',
+  APIKey: 'f53a5d5b29d3b8c0770b3b51224dbab9',
+
+  onWillStatusChange: function (oldStatus, newStatus) {},
+
+  onTextChange: function (text) {
+    question.value = text
+
+    if (text) {
+      clearTimeout(times)
+      times = setTimeout(() => xfVoice.stop(), 3000)
+    }
+  },
+
+  onError: function (error) {}
+})
+console.log = originalConsoleLog
 // 录音控制
 const startRecording = () => {
+  // 动画切换器
   handelIsVoiceLoading()
   if (isRecording.value) {
-    voiceRecognizer.stop()
+    // 关闭语音识别
+    xfVoice.stop()
     isRecording.value = false
   } else {
-    voiceRecognizer.start()
-    voiceRecognizer.onResult = (result) => {
-      question.value += result
-    }
+    xfVoice.start()
+    // 开始语音识别
     isRecording.value = true
   }
 }
 
-const handelIsVoiceLoading = () => {
-  if (isVoiceLoading.value) {
-    isVoiceLoading.value = false
-  } else {
-    isVoiceLoading.value = true
-  }
-}
 // 处理键盘事件
 const handleKeyUp = (event) => {
   if (event.key === 'Enter' && !event.shiftKey) {
