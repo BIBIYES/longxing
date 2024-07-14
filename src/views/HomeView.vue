@@ -12,7 +12,7 @@ const sessionStore = useSessionStore()
 const selectedSessionId = ref(null)
 const sessions = ref([])
 const activeOptionBox = ref(null) // 用于存储当前显示选项框的会话ID
-const clickToClose = ()=>{
+const clickToClose = () => {
   activeOptionBox.value = null
 }
 const goHome = () => {
@@ -33,7 +33,7 @@ const loadSessions = async () => {
 onMounted(() => {
   loadSessions()
   info(
-    "欢迎使用龙梦GPT,目前处于测试阶段，当您看到这个消息，说明您被邀请测试，非常感谢您，请您毫不留情的批评我们，这是对我们最大的鼓励-我和评委站一队项目组"
+    '欢迎使用龙梦GPT,目前处于测试阶段，当您看到这个消息，说明您被邀请测试，非常感谢您，请您毫不留情的批评我们，这是对我们最大的鼓励-我和评委站一队项目组'
   )
 })
 
@@ -119,13 +119,7 @@ const deleteSession = (id) => {
       </div>
     </div>
     <div class="main">
-      <router-view v-slot="{ Component }">
-        <transition
-          :enter-active-class="`animate__animated ${route.meta.transition}`"
-        >
-          <component :is="Component"></component>
-        </transition>
-      </router-view>
+      <router-view></router-view>
     </div>
   </div>
 </template>
@@ -175,6 +169,7 @@ const deleteSession = (id) => {
   cursor: pointer;
   margin-top: 5px;
   margin-bottom: 5px;
+  overflow: hidden;
   .img-box {
     width: 30px;
     height: 30px;

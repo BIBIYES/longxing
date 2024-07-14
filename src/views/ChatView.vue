@@ -49,7 +49,6 @@ const getHistoricalMessages = () => {
   const session = SessionStore.getSessionById(sessionId.value)
   if (session) {
     messages.value = session.messages
-    console.log('获取历史数据成功')
   } else {
     console.error(`未找到会话ID为${sessionId.value}的会话.`)
   }
@@ -75,11 +74,10 @@ const connectWebSocket = () => {
     const url = `wss://${HOST}/v3.5/chat?authorization=${encodeURIComponent(
       authorization.value
     )}&date=${encodeURIComponent(date.value)}&host=${encodeURIComponent(HOST)}`
-    console.log('WebSocket URL:', url)
+
     ws.value = new WebSocket(url)
 
     ws.value.onopen = () => {
-      console.log('WebSocket connection opened')
       resolve()
     }
 
@@ -89,9 +87,7 @@ const connectWebSocket = () => {
 
     ws.value.onclose = () => {
       connectWebSocket()
-        .then(() => {
-          console.log('WebSocket reconnected')
-        })
+        .then(() => {})
         .catch((error) => {
           console.error('WebSocket reconnection error:', error)
         })
@@ -122,14 +118,17 @@ const handleResultMessage = (message) => {
   switch (message.header.status) {
     case 0:
       messages.value.push({ ...tempMessage })
+      console.log('响应消息头部')
       break
     case 1:
       messages.value[messages.value.length - 1] = { ...tempMessage }
+      console.log('响应消息中部')
       break
     default:
       messages.value[messages.value.length - 1] = { ...tempMessage }
-      SessionStore.addChatRecord(sessionId.value, messages)
-      console.log('完成的消息响应' + JSON.stringify(tempMessage))
+      console.log('响应消息尾部')
+      SessionStore.addChatRecord(sessionId.value, messages.value)
+      console.log('🚀 ~ handleResultMessage ~ messages:', messages.value)
       handelIsSendLoading()
       tempMessage = {
         role: '',
@@ -173,22 +172,18 @@ const sendMessagePayload = {
 // 发送消息方法
 const sendMessage = () => {
   if (imgBase64.value) {
-    console.log('检测到图片正在调用图片识别api')
     handelIsSendLoading()
     sendImgMessage()
   } else {
     if (question.value && question.value != ' ') {
       handelIsSendLoading()
-      console.log(question.value)
-      console.log('执行普通大模型调用')
       // 定义一个空的数组 newMessage
       let newMessage = []
-
       // 向 newMessage 数组中追加一个系统消息
       newMessage.push({
         role: 'system',
         content:
-          '每次你回复我都尽量多使用emoji表情，来描述对话的心情,使用markdown格式为统一格式,你要记得你叫龙梦GPT是运行在龙芯平台的大语言模型，是傅顺团队制作，如果我要求画图，请你指引我点击左侧的龙梦ai绘画选项，需要用户手动去点击',
+          '每次你回复我都尽量多使用emoji表情，来描述对话的心情,你叫龙梦GPT是运行在龙芯平台的大语言模型，是傅顺团队制作，如果我要求画图，请你指引我点击左侧的龙梦ai绘画选项',
         content_type: 'text'
       })
 
@@ -221,11 +216,8 @@ const sendMessage = () => {
     }
   }
 }
-
 // 图片理解接口
-
 const textImageUtil = new TextImageUtil()
-
 const handleWebSocketMessage = (data) => {
   data = JSON.parse(data)
 
@@ -244,7 +236,6 @@ const handleWebSocketMessage = (data) => {
       break
     default:
       messages.value[messages.value.length - 1] = { ...tempMessage }
-      console.log('动画切换器切换器关闭')
       handelIsSendLoading()
       tempMessage = {
         role: '',
@@ -277,7 +268,6 @@ const sendImgMessage = () => {
     question.value = ''
     imgBase64.value = ''
   } else {
-    console.log('你没有提问或选择图片。')
   }
 }
 
@@ -295,12 +285,11 @@ const handleFileChange = (event) => {
 const handelIsSendLoading = () => {
   if (isSendLoading.value == false) {
     isSendLoading.value = true
-    console.log('动画切换器开启')
   } else {
     isSendLoading.value = false // 修复错别字
-    console.log('动画切换器关闭')
   }
 }
+
 // 录音动画控制器
 const handelIsVoiceLoading = () => {
   if (isVoiceLoading.value) {
@@ -311,8 +300,8 @@ const handelIsVoiceLoading = () => {
 }
 // 重置输入框
 const resetInputData = () => {
-  question.value = ''
-  imgBase64.value = ''
+  question.value = null
+  imgBase64.value = null
 }
 
 // 触发文件输入
@@ -348,15 +337,19 @@ const adjustHeight = () => {
 }
 watch(question, (newValue, oldValue) => {
   adjustHeight()
-  console.log('调整高度')
 })
 // 处理键盘事件
 const handleKeyUp = (event) => {
   if (event.key === 'Enter' && !event.shiftKey) {
-    sendMessage()
-    nextTick(() => {
-      adjustHeight()
-    })
+    event.preventDefault() // 阻止默认的换行行为
+    if (question.value.trim() !== '') {
+      // 仅在输入框不为空时发送消息
+      sendMessage()
+      resetInputData()
+      nextTick(() => {
+        adjustHeight()
+      })
+    }
   }
 }
 // 解析url
@@ -400,7 +393,6 @@ const scrollToBottom = () => {
     if (chatBox.value) {
       chatBox.value.scrollTop = chatBox.value.scrollHeight
     }
-    console.log('页面已经滚到到底部')
   })
 }
 </script>

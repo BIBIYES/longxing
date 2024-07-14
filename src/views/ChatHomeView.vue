@@ -17,6 +17,8 @@ const fileInputRef = ref(null)
 const sessionStore = useSessionStore()
 const isVoiceLoading = ref(false)
 const isRecording = ref(false)
+let placeholderText = ref('给“龙梦说些什么”发送消息')
+
 // 发送消息的函数
 const sendMessage = () => {
   if (question.value && imgBase64.value) {
@@ -24,15 +26,6 @@ const sendMessage = () => {
     console.log('生成了一个uuid ' + uuid)
     // 创建一个消息
     sessionStore.createNewMessage(uuid, question.value)
-    // 添加默认限定词
-    // const message = []
-    // message.push({
-    //   role: 'system',
-    //   content:
-    //     '每次你回复我都尽量多使用emoji表情，来描述对话的心情,使用markdown格式为统一格式,你要记得你叫龙梦GPT是运行在龙芯平台的大语言模型，是傅顺团队制作，如果我要求画图，请你指引我点击左侧的龙梦ai绘画选项，需要用户手动去点击',
-    //   content_type: 'text'
-    // })
-    // sessionStore.addChatRecord(uuid, message)
     router.push({
       name: 'chat',
       params: { id: uuid },
@@ -52,6 +45,7 @@ const sendMessage = () => {
     console.warn('你未输入任何东西')
   }
 }
+
 const triggerFileInput = () => {
   if (fileInputRef.value) {
     fileInputRef.value.click()
@@ -73,6 +67,7 @@ const startRecording = () => {
     isRecording.value = true
   }
 }
+
 const handelIsVoiceLoading = () => {
   if (isVoiceLoading.value) {
     isVoiceLoading.value = false
@@ -80,7 +75,15 @@ const handelIsVoiceLoading = () => {
     isVoiceLoading.value = true
   }
 }
-
+// 处理键盘事件
+const handleKeyUp = (event) => {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    if (question.value.trim() !== '') {
+      // 仅在输入框不为空时发送消息
+      sendMessage()
+    }
+  }
+}
 const fontAnimation = () => {
   typed = new Typed(typewriterElement.value, {
     strings: [
@@ -187,8 +190,9 @@ const handleFileChange = (event) => {
             ref="textareaRef"
             id="inputTextarea"
             rows="1"
-            placeholder="给“龙梦说些什么”发送消息"
+            :placeholder="placeholderText"
             @input="adjustHeight"
+            @keyup="handleKeyUp"
             v-model="question"
           ></textarea>
           <div class="icon icon-send" @click="sendMessage">
