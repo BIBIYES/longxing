@@ -1,79 +1,39 @@
-<template>
-  <div class="container">
-    <!-- 左侧用户控制组件 -->
-    <div class="userControl">
-      <div class="prompt-box">
-        <textarea
-          placeholder="输入图片的描述来生成"
-          v-model="requestJson.payload.message.text[0].content"
-        ></textarea>
-      </div>
-      <!-- 滑块 -->
-      <div class="slider-demo-block">
-        <span class="demonstration">图片宽度</span>
-        <el-slider v-model="widthIndex" :min="0" :max="customResolutions.length - 1" :marks="marks" show-tooltip />
-      </div>
-      <div class="slider-demo-block">
-        <span class="demonstration">图片高度</span>
-        <el-slider v-model="heightIndex" :min="0" :max="customResolutions[customResolutions.length]" :marks="marks" show-tooltip />
-      </div>
-    </div>
-    <!-- 中间按钮区域 -->
-    <div class="btn-box">
-      <button @click="getImage">🪄</button>
-    </div>
-    <!-- 图片显示区域 -->
-    <div class="AI-bot">
-      <div class="img-box" v-if="!loading">
-        <img
-          :src="`data:image/png;base64,${imageData}`"
-          alt="AI生成的图片"
-          v-if="imageData"
-        />
-        <el-empty description="你还没点击魔法棒呢" v-else />
-      </div>
-      <div class="loading-box" v-else>
-        <div class="loading-content">
-          <p style="font-size: 24px; color: white">正在生成图片...</p>
-        </div>
-      </div>
-      <div class="AI-control">
-        <!-- 保存按钮点击后保存生成的图片 -->
-        <div class="btn">
-          <img src="../assets/img/保存.png" alt="" />
-        </div>
-        <!-- 保存按钮点击后删除幕布上的图片 -->
-        <div class="btn">
-          <img src="../assets/img/保存.png" alt="" />
-        </div>
-        <!-- 保存按钮点击后保存生成的图片 -->
-        <div class="btn">
-          <img src="../assets/img/保存.png" alt="" />
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup>
 import { ref, watch } from 'vue'
 import axios from 'axios'
+import { useImageStore } from '@/stores/useImageStore.js'
+import { warning, error } from '@/utils/messageUtil.js'
 
-// 自定义分辨率列表
-const customResolutions = [512, 640, 680, 720, 768, 1024, 1280]
+const imageStore = useImageStore()
 
-// 创建滑块的索引引用
-const widthIndex = ref(0)
-const heightIndex = ref(0)
+// Define width and height
+const height = ref(null)
+const width = ref(null)
 
-// 创建marks对象用于滑块显示
-const marks = customResolutions.reduce((acc, cur, index) => {
-  acc[index] = cur
-  return acc
-}, {})
-
-// 加载动画控制器
+// Loading animation controller
 const loading = ref(false)
+
+// 浏览器保存imageData的图片
+const handleSave = () => {
+  if (!imageData.value) {
+    console.error('没有图片数据可以保存')
+    return
+  }
+
+  // 创建一个a元素
+  const link = document.createElement('a')
+  link.href = imageData.value
+  link.download = 'image.png'
+
+  // 触发点击事件以开始下载
+  link.click()
+}
+// 清除幕布图片
+const handleBacksPace = () => {
+  imageData.value = ''
+}
+
+// Request JSON
 const requestJson = ref({
   header: {
     app_id: 'c3fbc474',
@@ -84,8 +44,8 @@ const requestJson = ref({
       domain: 's291394db',
       temperature: 0.5,
       max_tokens: 4096,
-      width: customResolutions[widthIndex.value],
-      height: customResolutions[heightIndex.value]
+      width: width.value,
+      height: height.value
     }
   },
   payload: {
@@ -99,201 +59,170 @@ const requestJson = ref({
     }
   }
 })
+
+// Define value and cities
+const value = ref('')
+const cities = [
+  { value: '512x512', label: '512x512' },
+  { value: '640x360', label: '640x360' },
+  { value: '640x480', label: '640x480' },
+  { value: '640x640', label: '640x640' },
+  { value: '680x512', label: '680x512' },
+  { value: '512x680', label: '512x680' },
+  { value: '768x768', label: '768x768' },
+  { value: '720x1280', label: '720x1280' },
+  { value: '1280x720', label: '1280x720' },
+  { value: '1024x1024', label: '1024x1024' }
+]
+
+// Image data
 const imageData = ref(null)
 
-// Watchers to update width and height in requestJson
-watch(widthIndex, (newIndex) => {
-  requestJson.value.parameter.chat.width = customResolutions[newIndex]
-})
-watch(heightIndex, (newIndex) => {
-  requestJson.value.parameter.chat.height = customResolutions[newIndex]
+// Map for resolution to width and height
+const resolutionMap = {
+  '512x512': { width: 512, height: 512 },
+  '640x360': { width: 640, height: 360 },
+  '640x480': { width: 640, height: 480 },
+  '640x640': { width: 640, height: 640 },
+  '680x512': { width: 680, height: 512 },
+  '512x680': { width: 512, height: 680 },
+  '768x768': { width: 768, height: 768 },
+  '720x1280': { width: 720, height: 1280 },
+  '1280x720': { width: 1280, height: 720 },
+  '1024x1024': { width: 1024, height: 1024 }
+}
+
+// Watch for changes in value
+watch(value, (newValue) => {
+  if (newValue in resolutionMap) {
+    width.value = resolutionMap[newValue].width
+    height.value = resolutionMap[newValue].height
+    requestJson.value.parameter.chat.width = width.value
+    requestJson.value.parameter.chat.height = height.value
+  }
+  console.log(`高度是${height.value}，宽度是${width.value}`)
 })
 
+// Get image function
 const getImage = async () => {
-  console.log(requestJson.value)
-  loading.value = true
-  try {
-    const response = await axios.post(
-      'http://156.238.242.214:8080/api/getImage',
-      requestJson.value
-    )
-    const res = response.data
-    console.log(res)
-    imageData.value = res.data.AIRES.payload.choices.text[0].content
-    loading.value = false
-  } catch (error) {
-    console.error('获取图片失败:', error)
-    loading.value = false
+  if (requestJson.value.payload.message.text[0].content) {
+    if (value) {
+      console.log(requestJson.value)
+      loading.value = true
+      try {
+        const response = await axios.post(
+          'http://156.238.242.214:8080/api/getImage',
+          requestJson.value
+        )
+        const res = response.data
+        console.log(res)
+        const imgStr = res.data.AIRES.payload.choices.text[0].content
+        const imgBase64 = `data:image/png;base64,${imgStr}`
+        imageData.value = imgBase64
+        imageStore.addImage(imgBase64)
+        loading.value = false
+      } catch (error) {
+        loading.value = false
+        warning('错误', '图片违法法律法规无法生成')
+        console.error('获取图片失败:', error)
+      }
+    } else {
+      console.warn('你需要选择图片的分辨率')
+      warning('错误', '你需要选择图片的分辨率')
+    }
+  } else {
+    console.warn('需要在聊天框中描述你想要的图片')
+    warning('错误', '需要在聊天框中描述你想要的图片')
   }
 }
 </script>
 
-<style scoped>
-.container {
-  display: flex;
-  width: 100%;
-  justify-content: space-evenly;
-  align-items: center;
-  padding-right: 50px;
-}
+<template>
+  <div class="container">
+    <!-- 左侧用户控制组件 -->
+    <div class="userControl">
+      <div class="prompt-box">
+        <textarea
+          placeholder="输入图片的描述来生成"
+          v-model="requestJson.payload.message.text[0].content"
+        ></textarea>
+      </div>
+      <!-- 分辨率选择器 -->
+      <div class="select-box">
+        <el-select
+          v-model="value"
+          placeholder="请选择图片分辨率"
+          style="width: 240px"
+        >
+          <el-option
+            v-for="item in cities"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          >
+            <span style="float: left">{{ item.label }}</span>
+            <span
+              style="
+                float: right;
+                color: var(--el-text-color-secondary);
+                font-size: 13px;
+              "
+            >
+              {{ item.value }}
+            </span>
+          </el-option>
+        </el-select>
+      </div>
+    </div>
 
-.userControl {
-  width: 40%;
-  height: 800px;
-  /* border: 1px solid black; Remove border */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background-color: #ffffff; /* Optional: Add background color */
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Add box shadow for depth */
-  padding: 20px; /* Add padding for spacing inside the card */
-  margin-right: 20px; /* Optional: Add margin for separation */
-  border-radius: 5px;
-}
+    <!-- 中间按钮区域 -->
+    <div class="btn-box">
+      <button @click="getImage">🪄</button>
+    </div>
+    <!-- 图片显示区域 -->
+    <div class="AI-bot">
+      <div class="img-box" v-if="!loading">
+        <img :src="imageData" alt="AI生成的图片" v-if="imageData" />
+        <el-empty description="你还没点击魔法棒呢" v-else />
+      </div>
+      <div class="loading-box" v-else>
+        <div class="loading-content">
+          <p style="font-size: 24px; color: white">正在生成图片...</p>
+        </div>
+      </div>
+      <!-- 图片历史 -->
+      <div class="image-history-box">
+        <el-image
+          v-for="(url, index) in imageStore.imgs"
+          :key="index"
+          style="width: 100px; height: 100px"
+          :src="url"
+          :fit="'cover'"
+          :preview-src-list="imageStore.imgs"
+          :initial-index="index"
+        />
+      </div>
+      <div class="AI-control">
+        <!-- 保存按钮点击后保存生成的图片 -->
+        <div class="btn" @click="handleSave()">
+          <img src="../assets/img/save-svgrepo-com.png" alt="" />
+        </div>
+        <!-- 保存按钮点击后删除幕布上的图片 -->
+        <div class="btn" @click="handleBacksPace()">
+          <img
+            src="../assets/img/clear-inverse-reflect-horizontal-svgrepo-com.png"
+            alt=""
+          />
+        </div>
+        <!-- 保存按钮点击后保存生成的图片 -->
+        <div class="btn">
+          <img src="../assets/img/clear-option-svgrepo-com.png" alt="" />
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
 
-.userControl .prompt-box {
-  width: 100%;
-  height: 400px;
-  /* border: 1px black solid; Remove border */
-  border-radius: 10px; /* Optional: Add rounded corners */
-  background-color: #f0f0f0; /* Optional: Different background color */
-  padding: 10px; /* Optional: Inner padding */
-}
-
-.userControl .prompt-box textarea {
-  width: 100%;
-  border: none;
-  background: none;
-  outline: none;
-  resize: none;
-  font-family: Helvetica;
-  font-size: 16px;
-}
-
-button {
-  width: 50px;
-  height: 50px;
-  font-size: 32px;
-  border-radius: 10px;
-  border: none;
-  background-color: #007bff; /* Example: Button background color */
-  color: white; /* Example: Button text color */
-}
-
-.AI-bot {
-  width: 40%;
-  height: 800px;
-  /* border: 1px solid black; Remove border */
-  background-color: #ffffff; /* Optional: Add background color */
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Add box shadow for depth */
-  padding: 20px; /* Add padding for spacing inside the card */
-  margin-left: 20px; /* Optional: Add margin for separation */
-  border-radius: 5px;
-  display: flex;
-  flex-direction: column;
-}
-
-.AI-bot .img-box {
-  display: flex;
-  justify-content: center;
-  width: 100%;
-  height: 400px;
-  /* border: 1px black solid; Remove border */
-  border-radius: 10px; /* Optional: Add rounded corners */
-  overflow: hidden; /* Optional: Ensure content doesn't overflow */
-  margin-bottom: 10px;
-  background-color: #f0f0f0;
-}
-.AI-bot .loading-box {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  height: 400px;
-  /* border: 1px black solid; Remove border */
-  border-radius: 10px; /* Optional: Add rounded corners */
-  overflow: hidden; /* Optional: Ensure content doesn't overflow */
-  margin-bottom: 10px;
-  background-color: #f0f0f0;
-}
-.loading-box .loading-content {
-  font-size: 16px;
-  font-weight: 800;
-  background-image: linear-gradient(
-    45deg,
-    #ee7752,
-    #e73c7e,
-    #23a6d5,
-    #23d5ab,
-    #23a6d5,
-    #e73c7e,
-    #ee7752,
-    #e73c7e,
-    #23a6d5
-  );
-  background-size: 400%; /* 设置初始背景大小 */
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  position: relative;
-  display: inline-block;
-  cursor: pointer;
-  transition: background-position 0.5s ease; /* 设置过渡效果 */
-  animation: animateGradient 2s linear infinite; /* 使用动画效果 */
-}
-
-@keyframes animateGradient {
-  0% {
-    background-position: 0% 50%;
-  }
-  100% {
-    background-position: 100% 50%;
-  }
-}
-.AI-bot .img-box img {
-  height: 400px;
-  width: auto; /* Ensure image adjusts proportionally */
-  object-fit: cover; /* Optional: Adjust how the image fits */
-  border-radius: 5px;
-}
-.AI-bot .AI-control {
-  display: flex;
-  justify-content: space-around;
-}
-/* 保存按钮 */
-.AI-bot .AI-control .btn {
-  width: 50px;
-  height: 50px;
-  padding: 10px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  border-radius: 10px;
-}
-.AI-bot .AI-control .btn img {
-  width: 100%;
-}
-
-/* 滑块样式 */
-.slider-demo-block {
-  width: 400px;
-  max-width: 400px;
-  display: flex;
-  align-items: center;
-}
-.slider-demo-block .el-slider {
-  margin-top: 0;
-  margin-left: 12px;
-}
-.slider-demo-block .demonstration {
-  font-size: 14px;
-  color: var(--el-text-color-secondary);
-  line-height: 44px;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  margin-bottom: 0;
-}
-.slider-demo-block .demonstration + .el-slider {
-  flex: 0 0 70%;
-}
-/* 图片组件样式 */
+<style lang="less" scoped>
+@import url(../assets/css/main/AIPaintingView.less);
 </style>
