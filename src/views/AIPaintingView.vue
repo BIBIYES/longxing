@@ -111,7 +111,7 @@ const getImage = async () => {
       loading.value = true
       try {
         const response = await axios.post(
-          'https://longxing.bibiyes.xyz/AIPainting:8080/api/getImage',
+          'https://longxing.bibiyes.xyz/api/getImage',
           requestJson.value
         )
         const res = response.data
@@ -123,7 +123,7 @@ const getImage = async () => {
         loading.value = false
       } catch (error) {
         loading.value = false
-        warning('错误', '图片违法法律法规无法生成')
+        warning('错误', '图片违反法律法规无法生成')
         console.error('获取图片失败:', error)
       }
     } else {
