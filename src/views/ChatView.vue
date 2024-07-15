@@ -3,7 +3,6 @@ import { ref, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import CryptoJS from 'crypto-js'
 import { convertBase64 } from '@/utils/imgBase64Util'
-import VoiceRecognizer from '@/utils/VoiceRecognizer'
 import { useSessionStore } from '@/stores/sessionStore'
 import TextImageUtil from '@/utils/textImageUtil'
 import { XfVoiceDictation } from '@muguilin/xf-voice-dictation'
@@ -110,12 +109,12 @@ let tempMessage = {
 // 处理返回消息方法
 const handleResultMessage = (message) => {
   message = JSON.parse(message)
-
   const { str, role } = getMessage(message)
-
   tempMessage.role = role
   tempMessage.content += str
-
+  nextTick(() => {
+    scrollToBottom()
+  })
   switch (message.header.status) {
     case 0:
       messages.value.push({ ...tempMessage })
@@ -238,6 +237,7 @@ const handleWebSocketMessage = (data) => {
     default:
       messages.value[messages.value.length - 1] = { ...tempMessage }
       handelIsSendLoading()
+      SessionStore.addChatRecord(sessionId.value, messages.value)
       tempMessage = {
         role: '',
         content: ''
@@ -346,18 +346,20 @@ const startRecording = () => {
   if (isRecording.value) {
     // 关闭语音识别
     xfVoice.stop()
+    placeholderText.value = '给“龙梦说些什么”发送消息'
     isRecording.value = false
   } else {
     xfVoice.start()
+    placeholderText.value = '龙梦正在听.....'
     // 开始语音识别
     isRecording.value = true
   }
 }
 
-// 调整输入框高度
+// 输入框自适应
 const adjustHeight = () => {
   const textarea = textareaRef.value
-  textarea.style.height = '25px' // Reset height to 25px to calculate new height
+  textarea.style.height = 'auto' // Reset height to auto to calculate new height
   textarea.style.height = textarea.scrollHeight + 'px' // Set new height based on scrollHeight
 }
 watch(question, (newValue, oldValue) => {
@@ -451,7 +453,6 @@ const scrollToBottom = () => {
           <el-image
             style="width: 100px; height: 100%"
             :src="`data:image/png;base64,${imgBase64}`"
-            :fit="fit"
           />
         </div>
         <div class="input-controls">
