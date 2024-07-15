@@ -44,7 +44,7 @@ const isSendLoading = ref(false)
 const chatBox = ref(null)
 // 输入框
 const textareaRef = ref(null)
-const placeholderText = ref('给“龙梦说些什么”发送消息')
+const placeholderText = ref('给"龙梦说些什么"(shift+enter换行)')
 // 获取历史消息
 const getHistoricalMessages = () => {
   const session = SessionStore.getSessionById(sessionId.value)
@@ -448,7 +448,11 @@ const scrollToBottom = () => {
     <div class="input-container">
       <div class="input-section">
         <div class="image-preview" v-show="imgBase64">
-          <img :src="`data:image/png;base64,${imgBase64}`" alt="" />
+          <el-image
+            style="width: 100px; height: 100%"
+            :src="`data:image/png;base64,${imgBase64}`"
+            :fit="fit"
+          />
         </div>
         <div class="input-controls">
           <input

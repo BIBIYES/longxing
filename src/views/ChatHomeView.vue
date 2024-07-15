@@ -5,7 +5,6 @@ import { useRouter } from 'vue-router'
 import Typed from 'typed.js'
 import { generateUUID } from '@/utils/uuid'
 import { convertBase64 } from '@/utils/imgBase64Util'
-import VoiceRecognizer from '@/utils/VoiceRecognizer'
 import { XfVoiceDictation } from '@muguilin/xf-voice-dictation'
 const textareaRef = ref(null)
 const typewriterElement = ref(null)
@@ -96,9 +95,11 @@ const startRecording = () => {
   if (isRecording.value) {
     // 关闭语音识别
     xfVoice.stop()
+    placeholderText.value = '给“龙梦说些什么”发送消息'
     isRecording.value = false
   } else {
     xfVoice.start()
+    placeholderText.value = '龙梦正在听.....'
     // 开始语音识别
     isRecording.value = true
   }
@@ -196,7 +197,11 @@ const handleFileChange = (event) => {
     <div class="input-container">
       <div class="input-section">
         <div class="image-preview" v-show="imgBase64">
-          <img :src="`data:image/png;base64,${imgBase64}`" alt="" />
+          <el-image
+            style="width: 100px; height: 100%"
+            :src="`data:image/png;base64,${imgBase64}`"
+            :fit="cover"
+          />
         </div>
         <div class="input-controls">
           <input
