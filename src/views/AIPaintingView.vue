@@ -111,7 +111,7 @@ const getImage = async () => {
       loading.value = true
       try {
         const response = await axios.post(
-          'http://156.238.242.214:8080/api/getImage',
+          'https://longxing.bibiyes.xyz/api/getImage',
           requestJson.value
         )
         const res = response.data
