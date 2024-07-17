@@ -89,12 +89,12 @@ const deleteSession = (id) => {
         >
           <span>{{ session.title }}</span>
           <div class="options-box" v-if="activeOptionBox === session.uuid">
-            <div class="option-item" @click.stop="renameSession(session.uuid)">
+            <!-- <div class="option-item" @click.stop="renameSession(session.uuid)">
               <div class="img-box">
                 <img src="../assets/img/rename-svgrepo-com.png" alt="" />
               </div>
               <h4>重命名</h4>
-            </div>
+            </div> -->
             <div class="option-item" @click.stop="deleteSession(session.uuid)">
               <div class="img-box">
                 <img src="../assets/img/garbage-svgrepo-com.png" alt="" />
@@ -201,11 +201,11 @@ const deleteSession = (id) => {
   position: relative;
   .options-box {
     width: 100px;
-    height: 100px;
+    height: max-content;
     background-color: rgb(255, 255, 255);
     position: absolute;
     right: -90px;
-    bottom: -90px;
+    bottom: -20px;
     border-radius: 15px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     display: flex;
@@ -213,12 +213,14 @@ const deleteSession = (id) => {
     align-items: center;
     justify-content: center;
     z-index: 1;
+
     .option-item {
       width: 100%;
       height: 40px;
       display: flex;
       justify-content: center;
       align-items: center;
+      transition: all 0.3s ease;
       .img-box {
         height: 10px;
       }
@@ -227,6 +229,7 @@ const deleteSession = (id) => {
       }
       &:hover {
         background-color: #e0e0e0;
+        border-radius: 15px;
       }
     }
   }
