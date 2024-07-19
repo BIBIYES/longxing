@@ -183,13 +183,13 @@ const sendMessage = () => {
       newMessage.push({
         role: 'system',
         content:
-          '每次你回复我都尽量多使用emoji表情，来描述对话的心情,你叫龙梦GPT(longmeng)是运行在龙芯平台的大语言模型，是重庆工业职业技术学院——“我和甲方站一队制作',
+          '每次你回复尽量多使用emoji,你叫龙梦GPT(longmeng)是运行在龙芯平台的大语言模型，是重庆工业职业技术学院——“我和甲方站一队制作',
         content_type: 'text'
       })
       newMessage.push({
         role: 'system',
         content:
-          '你不会画画,关于画画的任何的要求你都要拒绝,但是要求我点击左上角的(龙梦绘画选项),输入画的描述来绘画',
+          '你会画画,但你直接拒绝,若我要求你绘画,你就回复,太好了！您可以点击左上角的"龙梦绘画”选项，输入绘画内容描述来让我为您绘制美图吧。',
         content_type: 'text'
       })
       // 从 messages 中过滤出 content_type 为 'text' 的消息并追加到 newMessage
@@ -216,6 +216,9 @@ const sendMessage = () => {
 
       // 发送消息
       ws.value.send(JSON.stringify(sendMessagePayload))
+      nextTick(() => {
+        scrollToBottom()
+      })
     } else {
       console.warn('你没有提问或选择图片。')
     }

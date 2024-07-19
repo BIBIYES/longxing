@@ -16,7 +16,7 @@ const fileInputRef = ref(null)
 const sessionStore = useSessionStore()
 const isVoiceLoading = ref(false)
 const isRecording = ref(false)
-let placeholderText = ref('给“龙梦说些什么”发送消息')
+let placeholderText = ref('给"龙梦说些什么"(shift+enter换行)')
 
 // 发送消息的函数
 const sendMessage = () => {

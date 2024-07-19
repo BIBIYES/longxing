@@ -106,7 +106,7 @@ watch(value, (newValue) => {
 // Get image function
 const getImage = async () => {
   if (requestJson.value.payload.message.text[0].content) {
-    if (value) {
+    if (value.value) {
       console.log(requestJson.value)
       loading.value = true
       try {
@@ -177,7 +177,15 @@ const getImage = async () => {
 
     <!-- 中间按钮区域 -->
     <div class="btn-box">
-      <button @click="getImage">🪄</button>
+      <el-tooltip
+        class="box-item"
+        effect="light"
+        content="生成AI绘画"
+        placement="top"
+        :show-arrow="false"
+      >
+        <button @click="getImage">🪄</button>
+      </el-tooltip>
     </div>
     <!-- 图片显示区域 -->
     <div class="AI-bot">
