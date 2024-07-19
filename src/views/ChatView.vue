@@ -59,7 +59,7 @@ const generateAuthParams = () => {
   const curTime = new Date()
   date.value = curTime.toUTCString()
 
-  const tmp = `host: ${HOST}\ndate: ${date.value}\nGET /v3.5/chat HTTP/1.1`
+  const tmp = `host: ${HOST}\ndate: ${date.value}\nGET /v4.0/chat HTTP/1.1`
   const tmpSha = CryptoJS.HmacSHA256(tmp, API_SECRET)
   const signature = CryptoJS.enc.Base64.stringify(tmpSha)
 
@@ -71,7 +71,7 @@ const generateAuthParams = () => {
 
 const connectWebSocket = () => {
   return new Promise((resolve, reject) => {
-    const url = `wss://${HOST}/v3.5/chat?authorization=${encodeURIComponent(
+    const url = `wss://${HOST}/v4.0/chat?authorization=${encodeURIComponent(
       authorization.value
     )}&date=${encodeURIComponent(date.value)}&host=${encodeURIComponent(HOST)}`
 
@@ -157,8 +157,8 @@ const sendMessagePayload = {
   },
   parameter: {
     chat: {
-      domain: 'generalv3.5',
-      temperature: 0.5,
+      domain: '4.0Ultra',
+      temperature: 0.2,
       max_tokens: 1024
     }
   },
@@ -183,10 +183,15 @@ const sendMessage = () => {
       newMessage.push({
         role: 'system',
         content:
-          '每次你回复我都尽量多使用emoji表情，来描述对话的心情,你叫龙梦GPT(longmeng)是运行在龙芯平台的大语言模型，是重庆工业职业技术学院——“我和甲方站一队制作”，你不会画画，如果我要求，请你指引我点击左侧的龙梦ai绘画选项',
+          '每次你回复我都尽量多使用emoji表情，来描述对话的心情,你叫龙梦GPT(longmeng)是运行在龙芯平台的大语言模型，是重庆工业职业技术学院——“我和甲方站一队制作',
         content_type: 'text'
       })
-
+      newMessage.push({
+        role: 'system',
+        content:
+          '你不会画画,关于画画的任何的要求你都要拒绝,但是要求我点击左上角的(龙梦绘画选项),输入画的描述来绘画',
+        content_type: 'text'
+      })
       // 从 messages 中过滤出 content_type 为 'text' 的消息并追加到 newMessage
       newMessage = newMessage.concat(
         messages.value.filter((msg) => msg.content_type === 'text')
