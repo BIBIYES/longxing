@@ -1,28 +1,28 @@
-# longxing
+# 龙梦GPT
 
-This template should help get you started developing with Vue 3 in Vite.
+此模板可帮助您使用 Vite 开发 Vue 3 项目。
 
-## Recommended IDE Setup
+## 推荐的 IDE 设置
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar)（并禁用 Vetur）。
 
-## Customize configuration
+## 自定义配置
 
-See [Vite Configuration Reference](https://vitejs.dev/config/).
+请参阅 [Vite 配置参考](https://vitejs.dev/config/)。
 
-## Project Setup
+## 安装项目依赖
 
 ```sh
 npm install
 ```
 
-### Compile and Hot-Reload for Development
+### 编译和热重载用于开发
 
 ```sh
 npm run dev
 ```
 
-### Compile and Minify for Production
+### 编译和压缩用于生产
 
 ```sh
 npm run build
