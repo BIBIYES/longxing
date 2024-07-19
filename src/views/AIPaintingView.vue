@@ -128,11 +128,11 @@ const getImage = async () => {
       }
     } else {
       console.warn('你需要选择图片的分辨率')
-      warning('错误', '你需要选择图片的分辨率')
+      warning('错误', '请先选择图片分辨率再生成图片哦')
     }
   } else {
     console.warn('需要在聊天框中描述你想要的图片')
-    warning('错误', '需要在聊天框中描述你想要的图片')
+    warning('错误', '请先在对话框中描述你的图片哦')
   }
 }
 </script>
