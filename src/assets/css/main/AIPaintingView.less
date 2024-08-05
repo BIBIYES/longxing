@@ -133,16 +133,18 @@ button {
     .loading-content {
       font-size: 16px;
       font-weight: 800;
-      background-image: linear-gradient(45deg,
-          #ee7752,
-          #e73c7e,
-          #23a6d5,
-          #23d5ab,
-          #23a6d5,
-          #e73c7e,
-          #ee7752,
-          #e73c7e,
-          #23a6d5);
+      background-image: linear-gradient(
+        45deg,
+        #ee7752,
+        #e73c7e,
+        #23a6d5,
+        #23d5ab,
+        #23a6d5,
+        #e73c7e,
+        #ee7752,
+        #e73c7e,
+        #23a6d5
+      );
       background-size: 400%;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -154,40 +156,56 @@ button {
     }
   }
 
-  .AI-control {
-    display: flex;
-    justify-content: space-around;
-
-    .btn {
-      width: 50px;
-      height: 50px;
-      padding: 10px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      border-radius: 10px;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-      &:hover {
-        transform: scale(1.1);
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-      }
-
-      &:active {
-        transform: scale(0.9);
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
-      }
-
-      img {
-        width: 100%;
-      }
-    }
-  }
+        .AI-control {
+          display: flex;
+          justify-content: space-around;
+    
+          .btn {
+            width: 50px;
+            height: 50px;
+            padding: 10px;
+            border-radius: 10px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border 0.2s ease;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border: 1px solid #ddd;
+            /* 默认边框颜色 */
+    
+            &:hover {
+              transform: scale(1.1);
+              box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            }
+    
+            &:active {
+              transform: scale(0.9);
+              box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            }
+    
+            img {
+              width: 100%;
+              transition: filter 0.3s ease;
+              filter: invert(0%);
+    
+              @media (prefers-color-scheme: dark) {
+                filter: invert(100%);
+              }
+            }
+          }
+    
+          @media (prefers-color-scheme: dark) {
+            .btn {
+              box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+              /* 深色模式下的阴影 */
+              border: 1px solid #555;
+              /* 深色模式下的边框颜色 */
+            }
+          }
+        }
 }
 
 @keyframes animateGradient {
   0% {
     background-position: 0% 50%;
   }
-
   100% {
     background-position: 100% 50%;
   }
@@ -197,7 +215,6 @@ button {
   0% {
     box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.4);
   }
-
   100% {
     box-shadow: 0 0 0 20px rgba(0, 123, 255, 0);
   }

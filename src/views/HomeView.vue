@@ -66,7 +66,11 @@ const deleteSession = (id) => {
     <div class="sidebar">
       <div class="title" @click="goHome">
         <div class="img-box">
-          <img src="../assets/img/create-svgrepo-com.svg" alt="创建会话" />
+          <img
+            class="creat-box"
+            src="../assets/img/create-svgrepo-com.svg"
+            alt="创建会话"
+          />
         </div>
         <h4 class="flowing-text">创建会话</h4>
       </div>
@@ -133,7 +137,7 @@ const deleteSession = (id) => {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   cursor: pointer;
-  transition: background-position 0.5s ease;
+  transition: background-position 0.5s ease, color 0.3s ease;
 
   &:hover {
     background-position: 100% 0;
@@ -142,6 +146,7 @@ const deleteSession = (id) => {
 
 .container {
   display: flex;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .sidebar {
@@ -151,6 +156,7 @@ const deleteSession = (id) => {
   padding: 5px;
   border-right: 1px solid #e0e0e0;
   color: #333;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 
   @media (prefers-color-scheme: dark) {
     background-color: #1e1e1e;
@@ -165,6 +171,7 @@ const deleteSession = (id) => {
   padding: 10px;
   background-color: #fff;
   color: #333;
+  transition: background-color 0.3s ease, color 0.3s ease;
 
   @media (prefers-color-scheme: dark) {
     background-color: #121212;
@@ -185,6 +192,7 @@ const deleteSession = (id) => {
   margin-top: 5px;
   margin-bottom: 5px;
   overflow: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 
   @media (prefers-color-scheme: dark) {
     background-color: #2c2c2c;
@@ -198,7 +206,11 @@ const deleteSession = (id) => {
 
     img {
       width: 100%;
-      filter: invert(0%); /* Default for light mode */
+    }
+    .creat-box {
+      width: 100%;
+      filter: invert(0%);
+      transition: filter 0.3s ease;
 
       @media (prefers-color-scheme: dark) {
         filter: invert(100%);
@@ -223,7 +235,7 @@ const deleteSession = (id) => {
   border-radius: 6px;
   font-size: 13px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.3s ease, color 0.3s ease;
   position: relative;
 
   @media (prefers-color-scheme: dark) {
@@ -244,6 +256,7 @@ const deleteSession = (id) => {
     align-items: center;
     justify-content: center;
     z-index: 1;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 
     @media (prefers-color-scheme: dark) {
       background-color: #333;
@@ -256,18 +269,13 @@ const deleteSession = (id) => {
       display: flex;
       justify-content: center;
       align-items: center;
-      transition: all 0.3s ease;
+      transition: background-color 0.3s ease;
 
       .img-box {
         height: 10px;
 
         img {
           width: 100%;
-          filter: invert(0%); /* Default for light mode */
-
-          @media (prefers-color-scheme: dark) {
-            filter: invert(100%);
-          }
         }
       }
 
@@ -319,12 +327,8 @@ const deleteSession = (id) => {
 
     img {
       width: 100%;
-      filter: invert(0%); /* Default for light mode */
-
-      @media (prefers-color-scheme: dark) {
-        filter: invert(100%);
-      }
     }
   }
 }
+
 </style>

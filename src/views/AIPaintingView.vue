@@ -213,7 +213,7 @@ const getImage = async () => {
       <div class="AI-control">
         <!-- 保存按钮点击后保存生成的图片 -->
         <div class="btn" @click="handleSave()">
-          <img src="../assets/img/save-svgrepo-com.png" alt="" />
+          <img src="../assets/img/save-svgrepo-com.svg" alt="" />
         </div>
         <!-- 保存按钮点击后删除幕布上的图片 -->
         <div class="btn" @click="handleBacksPace()">
