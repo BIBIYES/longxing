@@ -17,6 +17,10 @@
   left: -10px;
   color: #333333;
   animation: loading-animation 0.6s linear infinite;
+
+  @media (prefers-color-scheme: dark) {
+    color: #cccccc;
+  }
 }
 
 @keyframes loading-animation {

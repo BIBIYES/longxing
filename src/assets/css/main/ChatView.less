@@ -7,6 +7,13 @@
   padding-left: 5px;
   padding-right: 20px;
   box-sizing: border-box;
+  background-color: #fff;
+  color: #333;
+
+  @media (prefers-color-scheme: dark) {
+    background-color: #121212;
+    color: #f5f5f5;
+  }
 
   .chat-messages {
     flex: 1;
@@ -19,6 +26,10 @@
     padding-right: 300px;
     padding-left: 300px;
 
+    @media (prefers-color-scheme: dark) {
+      background-color: #1e1e1e;
+    }
+
     .message {
       width: auto;
       max-width: 70%;
@@ -26,24 +37,35 @@
       padding: 10px;
       margin: 5px 0;
       border-radius: 10px;
-
       background-color: #ffffff;
       word-wrap: break-word;
       position: relative;
       display: inline-block;
+
+      @media (prefers-color-scheme: dark) {
+        background-color: #2c2c2c;
+      }
+
       p {
         margin-bottom: 0;
       }
+
       &.user {
         align-self: flex-end;
         background-color: rgb(237, 237, 237);
         border-radius: 1.5rem;
+
+        @media (prefers-color-scheme: dark) {
+          background-color: #3a3a3a;
+        }
       }
 
       &.assistant {
         align-self: flex-start;
         background: none;
         border-radius: 1.5rem;
+
+        
       }
 
       .message-image {
@@ -52,6 +74,7 @@
       }
     }
   }
+
   //输入框
   .input-container {
     width: 100%;
@@ -60,6 +83,10 @@
     display: flex;
     justify-content: center;
     align-items: center;
+
+    @media (prefers-color-scheme: dark) {
+      background-color: #1e1e1e;
+    }
 
     .input-section {
       display: flex;
@@ -72,6 +99,7 @@
         border-radius: 5px;
         margin-bottom: 5px;
         padding-left: 10px;
+
         img {
           width: 100%;
         }
@@ -85,6 +113,10 @@
         padding: 10px 20px;
         background-color: #f5f5f5;
         position: relative;
+
+        @media (prefers-color-scheme: dark) {
+          background-color: #333;
+        }
 
         textarea {
           font-family: Arial, Helvetica, sans-serif;
@@ -103,12 +135,16 @@
           max-height: 300px;
           min-height: 23px;
           line-height: 20px;
+          color: #333;
+
+          @media (prefers-color-scheme: dark) {
+            color: #f5f5f5;
+          }
         }
 
         .icon {
           width: 30px;
           height: 30px;
-
           border-radius: 100px;
           display: flex;
           justify-content: center;

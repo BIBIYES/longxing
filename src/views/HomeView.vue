@@ -66,7 +66,7 @@ const deleteSession = (id) => {
     <div class="sidebar">
       <div class="title" @click="goHome">
         <div class="img-box">
-          <img src="../assets/img/create-svgrepo-com.png" alt="创建会话" />
+          <img src="../assets/img/create-svgrepo-com.svg" alt="创建会话" />
         </div>
         <h4 class="flowing-text">创建会话</h4>
       </div>
@@ -150,11 +150,26 @@ const deleteSession = (id) => {
   background-color: #ffffff;
   padding: 5px;
   border-right: 1px solid #e0e0e0;
+  color: #333;
+
+  @media (prefers-color-scheme: dark) {
+    background-color: #1e1e1e;
+    border-right: 1px solid #555;
+    color: #f5f5f5;
+  }
 }
+
 .main {
   width: 100%;
   height: 100vh;
   padding: 10px;
+  background-color: #fff;
+  color: #333;
+
+  @media (prefers-color-scheme: dark) {
+    background-color: #121212;
+    color: #f5f5f5;
+  }
 }
 
 .title {
@@ -170,13 +185,24 @@ const deleteSession = (id) => {
   margin-top: 5px;
   margin-bottom: 5px;
   overflow: hidden;
+
+  @media (prefers-color-scheme: dark) {
+    background-color: #2c2c2c;
+  }
+
   .img-box {
     width: 30px;
     height: 30px;
     margin-right: 10px;
     position: relative;
+
     img {
       width: 100%;
+      filter: invert(0%); /* Default for light mode */
+
+      @media (prefers-color-scheme: dark) {
+        filter: invert(100%);
+      }
     }
   }
 
@@ -199,6 +225,11 @@ const deleteSession = (id) => {
   cursor: pointer;
   transition: background-color 0.3s ease;
   position: relative;
+
+  @media (prefers-color-scheme: dark) {
+    background-color: #2c2c2c;
+  }
+
   .options-box {
     width: 100px;
     height: max-content;
@@ -214,6 +245,11 @@ const deleteSession = (id) => {
     justify-content: center;
     z-index: 1;
 
+    @media (prefers-color-scheme: dark) {
+      background-color: #333;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    }
+
     .option-item {
       width: 100%;
       height: 40px;
@@ -221,25 +257,49 @@ const deleteSession = (id) => {
       justify-content: center;
       align-items: center;
       transition: all 0.3s ease;
+
       .img-box {
         height: 10px;
+
+        img {
+          width: 100%;
+          filter: invert(0%); /* Default for light mode */
+
+          @media (prefers-color-scheme: dark) {
+            filter: invert(100%);
+          }
+        }
       }
+
       h4 {
         width: 40px;
       }
+
       &:hover {
         background-color: #e0e0e0;
         border-radius: 15px;
+
+        @media (prefers-color-scheme: dark) {
+          background-color: #444;
+        }
       }
     }
   }
 
   &:hover {
     background-color: rgb(210, 210, 210);
+
+    @media (prefers-color-scheme: dark) {
+      background-color: #444;
+    }
   }
 
   &.selected {
     background-color: rgb(200, 200, 200);
+
+    @media (prefers-color-scheme: dark) {
+      background-color: #555;
+    }
   }
 
   span {
@@ -259,6 +319,11 @@ const deleteSession = (id) => {
 
     img {
       width: 100%;
+      filter: invert(0%); /* Default for light mode */
+
+      @media (prefers-color-scheme: dark) {
+        filter: invert(100%);
+      }
     }
   }
 }
