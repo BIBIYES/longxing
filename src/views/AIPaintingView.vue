@@ -748,6 +748,7 @@ h4 {
 
         .img-box {
           width: 20px;
+          height: 20px;
 
           img {
             width: 100%;
