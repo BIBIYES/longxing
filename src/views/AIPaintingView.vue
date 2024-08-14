@@ -126,7 +126,7 @@ const startDraw = async () => {
   console.log("请求图片", requestJson);
   //发送请求
   const response = await axios.post(
-    'http://127.0.0.1:8080/getImage',
+    'https://longxing.bibiyes.xyz/api/getImage',
     requestJson.value
   )
   const res = response.data
@@ -149,6 +149,11 @@ const selectedStyle = ref('')
 const changeStyle = (newStyle) => {
   style.value = newStyle
   selectedStyle.value = newStyle
+}
+
+// 清除画布
+const clearCanvas = () => {
+  imageData.value = ''
 }
 
 onMounted(() => {
@@ -266,7 +271,7 @@ onMounted(() => {
                 </template>
               </el-popover>
             </div>
-            <div class="slider-demo-block" style="padding-left: 10px;">
+            <div class="slider-demo-block" style="padding: 10px;">
               <span class="demonstration"></span>
               <!-- 绑定 v-model 到 samplingRate -->
               <!-- 设置 min 为 0.0，max 为 1，step 为 0.1 -->
@@ -293,7 +298,7 @@ onMounted(() => {
         <!--控制器 -->
         <div class="controller">
           <!-- 清除画布 -->
-          <div class="item" @click="">
+          <div class="item" @click="clearCanvas()">
             <img src="../assets/img/cross-circle.svg" alt="">
           </div>
           <!-- 下载图片 -->
@@ -336,8 +341,8 @@ onMounted(() => {
 </template>
 <style lang="less">
 @common-width: 600px;
-@bg-color-light: #f0f2f5;
-@bg-color-dark: #e0e2e5;
+@bg-color-light: #f0f0f0;
+@bg-color-dark: #ffffff;
 @primary-color: #007bff; // Blue color for buttons
 @box-shadow: 10px 10px 30px #a0a0a0, -10px -10px 30px #ffffff;
 @border-radius: 10px;
@@ -369,14 +374,14 @@ h4 {
 }
 
 .ai_box {
-  width: 83vw;
+  width: 84vw;
   min-height: 95vh;
   background-color: @bg-color-light;
   border-radius: @border-radius;
   display: flex;
+  justify-content: space-around;
 
   .user_control {
-    width: 50%;
     height: 800px;
     padding-top: 30px;
 
@@ -394,6 +399,10 @@ h4 {
       background-color: white;
       margin-bottom: 3px;
       position: relative;
+
+      @media (prefers-color-scheme: dark) {
+        filter: invert(100%);
+      }
 
       textarea {
         background: none;
@@ -440,6 +449,7 @@ h4 {
       cursor: pointer;
       font-family: 'Helvetica Neue', Arial, sans-serif;
       font-weight: bold;
+
     }
 
     .parameter_panel {
@@ -452,6 +462,12 @@ h4 {
         padding: 10px;
         background-color: @bg-color-dark;
         border-radius: @border-radius;
+
+        @media (prefers-color-scheme: dark) {
+          background-color: #121212;
+          color: white;
+
+        }
       }
 
       .select_style_box {
@@ -471,6 +487,8 @@ h4 {
             cursor: pointer;
             transition: all 0.3s ease;
 
+
+
             img {
               width: 100%;
               height: 100%;
@@ -483,7 +501,16 @@ h4 {
               margin: 0 auto;
               text-align: center;
               color: @text-color;
-              font-family: 'Helvetica Neue', Arial, sans-serif;
+
+              @media (prefers-color-scheme: dark) {
+                background-color: #121212;
+                color: white;
+
+              }
+
+              font-family: 'Helvetica Neue',
+              Arial,
+              sans-serif;
             }
           }
 
@@ -507,19 +534,18 @@ h4 {
 
             border: 5px solid white;
             border-radius: 20px;
+            animation: pulse 1.5s infinite;
           }
 
           @keyframes pulse {
 
             0%,
             100% {
-              transform: scale(1);
-              opacity: 0.7;
+              background-color: white
             }
 
             50% {
-              transform: scale(1.1);
-              opacity: 1;
+              background-color: rgb(2, 91, 255)
             }
           }
         }
@@ -534,6 +560,11 @@ h4 {
           color: @text-color;
           font-family: 'Helvetica Neue', Arial, sans-serif;
 
+          @media (prefers-color-scheme: dark) {
+
+            filter: invert(100%);
+          }
+
           .tips {
             width: 20px;
             height: 20px;
@@ -546,7 +577,6 @@ h4 {
   }
 
   .ai_output {
-    width: 50%;
     height: 800px;
     display: flex;
     justify-content: center;
@@ -560,6 +590,11 @@ h4 {
       border-radius: @border-radius;
       overflow: hidden;
 
+      @media (prefers-color-scheme: dark) {
+        background-color: #121212;
+        color: white;
+      }
+
       // loading动画
       .loading-box {
         display: flex;
@@ -572,19 +607,24 @@ h4 {
         margin-bottom: 10px;
         background-color: white;
 
+        @media (prefers-color-scheme: dark) {
+          background-color: #121212;
+          color: white;
+        }
+
         .loading-content {
           font-size: 16px;
           font-weight: 800;
           background-image: linear-gradient(45deg,
-              #007bff,
-              #0056b3,
-              #004085,
-              #6610f2,
-              #0056b3,
-              #004085,
-              #007bff,
-              #6610f2,
-              #004085);
+              #ee7752,
+              #e73c7e,
+              #23a6d5,
+              #23d5ab,
+              #23a6d5,
+              #e73c7e,
+              #ee7752,
+              #e73c7e,
+              #23a6d5);
           background-size: 400%;
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
@@ -625,17 +665,34 @@ h4 {
       justify-content: space-around;
       align-items: center;
 
+      @media (prefers-color-scheme: dark) {
+        background-color: #121212;
+        color: white;
+      }
+
       .item {
         width: 50px;
         height: 50px;
         background-color: #f5f5f5;
         border-radius: 10px;
+        cursor: pointer;
+
+        @media (prefers-color-scheme: dark) {
+          background-color: #6b6b6b;
+          color: white;
+
+        }
+
 
         img {
           width: 100%;
           padding: 10px;
         }
+
+
       }
+
+
 
 
     }
@@ -651,6 +708,13 @@ h4 {
         height: 200px;
         display: flex;
         flex-wrap: wrap;
+        border-radius: 10px;
+
+        @media (prefers-color-scheme: dark) {
+          background-color: #121212;
+          color: white;
+        }
+
         /* 允许换行 */
         gap: 11px;
         /* 设置盒子之间的间距 */
@@ -671,6 +735,7 @@ h4 {
       width: 600px;
       height: 200px;
       display: flex;
+      border-radius: 10px;
       justify-content: center;
       align-items: center;
       background-color: white;
@@ -689,9 +754,109 @@ h4 {
           }
         }
       }
+
+      @media (prefers-color-scheme: dark) {
+        filter: invert(100%);
+        color: black;
+      }
+    }
+  }
+}
+
+/* 深色模式适配 */
+@media (prefers-color-scheme: dark) {
+  @bg-color-light: #1e1e1e;
+  @bg-color-dark: #2e2e2e;
+  @text-color: #cccccc;
+  @text-color-muted: #888888;
+  @primary-color: #007bff; // 深色模式下可以保持不变，但你可以根据需要调整
+
+  .ai_box {
+    background-color: @bg-color-light;
+  }
+
+  .user_control {
+    .prompt {
+      background-color: @bg-color-dark;
+
+      textarea {
+        color: @text-color;
+      }
+
+      .tips {
+        color: @text-color-muted;
+      }
+    }
+
+    .call_word {
+      color: @text-color-muted;
+    }
+
+    /* 添加动画效果 */
+    .generant {
+      height: 50px;
+      background-color: @primary-color;
+      text-align: center;
+      color: white;
+      line-height: 50px;
+      cursor: pointer;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-weight: bold;
+      transition: background-color 0.3s ease, transform 0.3s ease;
+      /* 添加过渡效果 */
+    }
+
+    /* 鼠标悬停时的效果 */
+    .generant:hover {
+      background-color: darken(@primary-color, 10%);
+      /* 深化背景颜色 */
+
+      /* 放大按钮 */
+    }
+
+    /* 鼠标按下时的效果 */
+    .generant:active {
+      transform: scale(0.95);
+      /* 缩小按钮 */
+    }
+
+    .parameter_panel {
+
+      .select_style_box,
+      .select_resolution {
+        background-color: @bg-color-dark;
+      }
+
+      .select_style_box {
+        .box {
+          background: #555555;
+
+          .title {
+            color: @text-color;
+          }
+        }
+      }
+
+      .select_resolution {
+        .title {
+          color: @text-color;
+        }
+      }
     }
   }
 
+  .ai_output {
 
+    .canvas,
+    .controller,
+    .image-history-box,
+    .empty-history {
+      background-color: @bg-color-dark;
+    }
+
+    .controller .item {
+      background-color: #444444;
+    }
+  }
 }
 </style>
