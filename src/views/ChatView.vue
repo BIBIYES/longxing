@@ -34,7 +34,6 @@ const fileInputRef = ref(null)
 const isRecording = ref(false)
 //当前页面会话id
 const sessionId = ref(route.params.id)
-
 // 语音动画控制器
 const isVoiceLoading = ref(false)
 // 发送动画控制器
@@ -87,7 +86,7 @@ const connectWebSocket = () => {
 
     ws.value.onclose = () => {
       connectWebSocket()
-        .then(() => {})
+        .then(() => { })
         .catch((error) => {
           console.error('WebSocket reconnection error:', error)
         })
@@ -172,11 +171,11 @@ const sendMessagePayload = {
 // 发送消息方法
 const sendMessage = () => {
   if (imgBase64.value) {
-    handelIsSendLoading()
+    isSendLoading.value = true
     sendImgMessage()
   } else {
     if (question.value && question.value != ' ') {
-      handelIsSendLoading()
+      isSendLoading.value = true
       // 定义一个空的数组 newMessage
       let newMessage = []
       // 向 newMessage 数组中追加一个系统消息
@@ -244,7 +243,7 @@ const handleWebSocketMessage = (data) => {
       break
     default:
       messages.value[messages.value.length - 1] = { ...tempMessage }
-      handelIsSendLoading()
+      isSendLoading.value = false
       SessionStore.addChatRecord(sessionId.value, messages.value)
       tempMessage = {
         role: '',
@@ -276,6 +275,9 @@ const sendImgMessage = () => {
     textImageUtil.sendMessage(question.value, imgBase64.value)
     question.value = ''
     imgBase64.value = ''
+    nextTick(() => {
+      scrollToBottom()
+    })
   } else {
   }
 }
@@ -327,13 +329,13 @@ let times = null
 
 // 实例化迅飞语音听写（流式版）WebAPI
 const originalConsoleLog = console.log
-console.log = function () {}
+console.log = function () { }
 const xfVoice = new XfVoiceDictation({
   APPID: 'c3fbc474',
   APISecret: 'YzgzN2E3NzM2NDVjNWRkMGQwZGE5OTEz',
   APIKey: 'f53a5d5b29d3b8c0770b3b51224dbab9',
 
-  onWillStatusChange: function (oldStatus, newStatus) {},
+  onWillStatusChange: function (oldStatus, newStatus) { },
 
   onTextChange: function (text) {
     question.value = text
@@ -344,7 +346,7 @@ const xfVoice = new XfVoiceDictation({
     }
   },
 
-  onError: function (error) {}
+  onError: function (error) { }
 })
 console.log = originalConsoleLog
 // 录音控制
@@ -385,6 +387,15 @@ const handleKeyUp = (event) => {
         adjustHeight()
       })
     }
+  }
+}
+// 终止会话
+const terminateSession = () => {
+  if (ws.value) {
+    ws.value.close()
+    ws.value = null
+    // 关闭发送动画
+    handelIsSendLoading()
   }
 }
 // 解析url
@@ -435,11 +446,7 @@ const scrollToBottom = () => {
 <template>
   <div class="chat-container">
     <div class="chat-messages markdown-body" ref="chatBox">
-      <div
-        v-for="(msg, index) in messages"
-        :key="index"
-        :class="['message', msg.role]"
-      >
+      <div v-for="(msg, index) in messages" :key="index" :class="['message', msg.role]">
         <template v-if="msg.role === 'assistant'">
           <div v-html="convertToHtml(msg.content)"></div>
         </template>
@@ -447,55 +454,35 @@ const scrollToBottom = () => {
           <p style="margin-bottom: 0">{{ msg.content }}</p>
         </template>
         <template v-else-if="msg.content_type === 'image'">
-          <img
-            :src="`data:image/png;base64,${msg.content}`"
-            alt="Uploaded Image"
-            class="message-image"
-          />
+          <img :src="`data:image/png;base64,${msg.content}`" alt="Uploaded Image" class="message-image" />
         </template>
       </div>
     </div>
     <div class="input-container">
       <div class="input-section">
         <div class="image-preview" v-show="imgBase64">
-          <el-image
-            style="width: 100px; height: 100%"
-            :src="`data:image/png;base64,${imgBase64}`"
-          />
+          <el-image style="width: 100px; height: 100%" :src="`data:image/png;base64,${imgBase64}`" />
         </div>
         <div class="input-controls">
-          <input
-            type="file"
-            @change="handleFileChange"
-            accept="image/*"
-            style="display: none"
-            ref="fileInputRef"
-          />
+          <input type="file" @change="handleFileChange" accept="image/*" style="display: none" ref="fileInputRef" />
           <div class="icon icon-upload" @click="triggerFileInput">
             <!-- <img src="../assets/img/上传.png" alt="Upload Icon" /> -->
-            <el-icon :size="28"><UploadFilled /></el-icon>
+            <el-icon :size="28">
+              <UploadFilled />
+            </el-icon>
           </div>
           <div class="icon icon-record" @click="startRecording">
             <VoiceLoading v-if="isVoiceLoading"></VoiceLoading>
-            <el-icon v-else :size="23"><Microphone /></el-icon>
+            <el-icon v-else :size="23">
+              <Microphone />
+            </el-icon>
             <!-- <img src="../assets/img/录音.png" alt="Recording Icon"  /> -->
           </div>
-          <textarea
-            ref="textareaRef"
-            id="inputTextarea"
-            rows="1"
-            :placeholder="placeholderText"
-            @input="adjustHeight"
-            @keyup="handleKeyUp"
-            v-model="question"
-          ></textarea>
-          <div class="icon icon-send" @click="sendMessage">
-            <TextLoading v-if="isSendLoading"></TextLoading>
-            <img
-              src="../assets/img/send-alt-svgrepo-com.svg"
-              alt="Send Icon"
-              v-else
-            />
+          <textarea ref="textareaRef" id="inputTextarea" rows="1" :placeholder="placeholderText" @input="adjustHeight"
+            @keyup="handleKeyUp" v-model="question"></textarea>
+          <div class="icon icon-send">
+            <TextLoading v-if="isSendLoading" @click="terminateSession()"></TextLoading>
+            <img src="../assets/img/send-alt-svgrepo-com.svg" alt="Send Icon" @click="sendMessage" v-else />
           </div>
         </div>
       </div>

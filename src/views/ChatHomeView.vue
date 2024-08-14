@@ -178,10 +178,7 @@ const handleFileChange = (event) => {
           </div>
           <div class="item">
             <div class="icon">
-              <img
-                src="../assets/img/calendar-lines-pen-svgrepo-com.png"
-                alt=""
-              />
+              <img src="../assets/img/calendar-lines-pen-svgrepo-com.png" alt="" />
             </div>
             <div class="text">帮您制定健身计划</div>
           </div>
@@ -197,38 +194,25 @@ const handleFileChange = (event) => {
     <div class="input-container">
       <div class="input-section">
         <div class="image-preview" v-show="imgBase64">
-          <el-image
-            style="width: 100px; height: 100%"
-            :src="`data:image/png;base64,${imgBase64}`"
-            :fit="cover"
-          />
+          <el-image style="width: 100px; height: 100%" :src="`data:image/png;base64,${imgBase64}`" fit="cover" />
         </div>
         <div class="input-controls">
-          <input
-            type="file"
-            @change="handleFileChange"
-            accept="image/*"
-            style="display: none"
-            ref="fileInputRef"
-          />
+          <input type="file" @change="handleFileChange" accept="image/*" style="display: none" ref="fileInputRef" />
           <div class="icon icon-upload" @click="triggerFileInput">
             <!-- <img src="../assets/img/上传.png" alt="Upload Icon" /> -->
-            <el-icon :size="28"><UploadFilled /></el-icon>
+            <el-icon :size="28">
+              <UploadFilled />
+            </el-icon>
           </div>
           <div class="icon icon-record" @click="startRecording">
             <VoiceLoading v-if="isVoiceLoading"></VoiceLoading>
-            <el-icon v-else :size="23"><Microphone /></el-icon>
+            <el-icon v-else :size="23">
+              <Microphone />
+            </el-icon>
             <!-- <img src="../assets/img/录音.png" alt="Recording Icon"  /> -->
           </div>
-          <textarea
-            ref="textareaRef"
-            id="inputTextarea"
-            rows="1"
-            :placeholder="placeholderText"
-            @input="adjustHeight"
-            @keyup="handleKeyUp"
-            v-model="question"
-          ></textarea>
+          <textarea ref="textareaRef" id="inputTextarea" rows="1" :placeholder="placeholderText" @input="adjustHeight"
+            @keyup="handleKeyUp" v-model="question"></textarea>
           <div class="icon icon-send" @click="sendMessage">
             <img src="../assets/img/send-alt-svgrepo-com.svg" alt="Send Icon" />
           </div>

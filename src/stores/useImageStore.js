@@ -10,10 +10,14 @@ export const useImageStore = defineStore(
     const addImage = (img) => {
       imgs.value.unshift(img)
     }
+    const clear = () => {
+      imgs.value = []
+    }
 
     return {
       imgs,
-      addImage
+      addImage,
+      clear
     }
   },
   {
