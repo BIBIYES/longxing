@@ -126,7 +126,7 @@ const startDraw = async () => {
   console.log("请求图片", requestJson);
   //发送请求
   const response = await axios.post(
-    'https://longxing.bibiyes.xyz/api/getImage',
+    'http://127.0.0.1:8080/getImage',
     requestJson.value
   )
   const res = response.data
@@ -320,8 +320,8 @@ onMounted(() => {
           </div>
           <div class="history-list" v-if="imageStore.imgs.length > 0">
             <div class="history-item" v-for="(item, index) in imageStore.imgs" :key="index">
-              <el-image style="width: 100px;border-radius: 10px; " :src="item" :preview-src-list="imageStore.imgs"
-                :initial-index="index">
+              <el-image style="width: 100px;height: 100px; border-radius: 10px; " :src="item"
+                :preview-src-list="imageStore.imgs" :initial-index="index">
               </el-image>
             </div>
           </div>
@@ -748,7 +748,7 @@ h4 {
 
         .img-box {
           width: 20px;
-          height: 20px;
+          overflow: hidden;
 
           img {
             width: 100%;
