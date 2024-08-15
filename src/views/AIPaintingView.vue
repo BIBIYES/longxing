@@ -129,13 +129,26 @@ const startDraw = async () => {
     'https://longxing.bibiyes.xyz/api/getImage',
     requestJson.value
   )
-  const res = response.data
-  console.log(res)
-  const imgStr = res.data.AIRES.payload.choices.text[0].content
-  const imgBase64 = `data:image/png;base64,${imgStr}`
-  imageData.value = imgBase64
-  isLoading.value = false
-  imageStore.addImage(imageData.value)
+  try {
+    const res = response.data
+    console.log(res)
+    const imgStr = res.data.AIRES.payload.choices.text[0].content
+    const imgBase64 = `data:image/png;base64,${imgStr}`
+    imageData.value = imgBase64
+    isLoading.value = false
+    imageStore.addImage(imageData.value)
+  } catch (error) {
+    const res = response.data
+    isLoading.value = false
+    if (res.data.AIRES.header.code === 10022) {
+      warning("警告", "请删除血腥、危害国家安全")
+    }
+    if (res.data.AIRES.header.code === 10021) {
+      warning("(1) 涉及国家安全的信息 (2) 涉及政治与宗教类的信息；(3) 涉及暴力与恐怖主义的信息；(4) 涉及黄赌毒类的信息(5) 涉及不文明的信息。")
+    }
+
+  }
+
 
 }
 
