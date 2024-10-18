@@ -1,8 +1,8 @@
 <script setup>
-import { onMounted, ref } from 'vue'
-import { warning } from '../utils/messageUtil';
-import { useImageStore } from '@/stores/useImageStore.js'
-import axios from 'axios'
+import { onMounted, ref } from "vue"
+import { warning } from "../utils/messageUtil"
+import { useImageStore } from "@/stores/useImageStore.js"
+import axios from "axios"
 
 // 字数追踪
 const textNumber = ref(0)
@@ -12,13 +12,13 @@ const inputChange = () => {
 }
 
 // 图片数据
-const imageData = ref('')
+const imageData = ref("")
 
 // 图片历史
 const imageStore = useImageStore()
 
 // 绘画提示词
-const prompt = ref('')
+const prompt = ref("")
 
 // 动画控制器
 const isLoading = ref(false)
@@ -27,44 +27,40 @@ const isLoading = ref(false)
 const samplingRate = ref(0.5)
 // 画作尺寸
 const resolutions = [
-  '512x512',
-  '640x360',
-  '640x480',
-  '640x640',
-  '680x512',
-  '512x680',
-  '768x768',
-  '720x1280',
-  '1280x720',
-  '1024x1024'
+  "512x512",
+  "640x360",
+  "640x480",
+  "640x640",
+  "680x512",
+  "512x680",
+  "768x768",
+  "720x1280",
+  "1280x720",
+  "1024x1024"
 ]
 // 浏览器下载imgdatabase64为图片
 const saveImage = (img) => {
-
-
   // 检查 imgData 是否存在且非空
   if (!img) {
-    console.warn('Image data is undefined or null');
-    return;
+    console.warn("Image data is undefined or null")
+    return
   }
-  console.log(img);
+  console.log(img)
   // 创建一个 <a> 元素
-  const link = document.createElement('a');
+  const link = document.createElement("a")
 
   // 设置下载的文件名（可以根据需求修改）
-  link.download = prompt.value + '.png';
+  link.download = prompt.value + ".png"
 
   // 设置 <a> 元素的 href 属性为 base64 图片数据
-  link.href = img;
+  link.href = img
 
   // 触发点击事件，启动下载
-  link.click();
+  link.click()
 
   // 移除 <a> 元素（清理）
-  link.remove();
+  link.remove()
 }
-
-
 
 // 画作高度
 const canvasHeight = ref(512)
@@ -92,20 +88,23 @@ const startDraw = async () => {
   }
   // 判断文字是否大于4
   if (textNumber.value <= 4) {
-    warning("描述模糊不清", "你的描述内容有点少，这会影响到作画的质量，请您仔细描述你脑海中想象的画面")
+    warning(
+      "描述模糊不清",
+      "你的描述内容有点少，这会影响到作画的质量，请您仔细描述你脑海中想象的画面"
+    )
     return
   }
   isLoading.value = true
-  console.log(prompt.value);
+  console.log(prompt.value)
   // Request JSON
   const requestJson = ref({
     header: {
-      app_id: 'c3fbc474',
-      uid: 'eae89f64-9f86-4'
+      app_id: "c3fbc474",
+      uid: "eae89f64-9f86-4"
     },
     parameter: {
       chat: {
-        domain: 's291394db',
+        domain: "s291394db",
         temperature: samplingRate.value,
         max_tokens: 4096,
         width: parseInt(canvasWidth.value),
@@ -116,17 +115,17 @@ const startDraw = async () => {
       message: {
         text: [
           {
-            role: 'user',
+            role: "user",
             content: prompt.value + style.value
           }
         ]
       }
     }
   })
-  console.log("请求图片", requestJson);
+  console.log("请求图片", requestJson)
   //发送请求
   const response = await axios.post(
-    'https://longxing.bibiyes.xyz/api/getImage',
+    "http://127.0.0.1:5001/getImage",
     requestJson.value
   )
   try {
@@ -144,19 +143,18 @@ const startDraw = async () => {
       warning("警告", "请删除血腥、危害国家安全")
     }
     if (res.data.AIRES.header.code === 10021) {
-      warning("(1) 涉及国家安全的信息 (2) 涉及政治与宗教类的信息；(3) 涉及暴力与恐怖主义的信息；(4) 涉及黄赌毒类的信息(5) 涉及不文明的信息。")
+      warning(
+        "(1) 涉及国家安全的信息 (2) 涉及政治与宗教类的信息；(3) 涉及暴力与恐怖主义的信息；(4) 涉及黄赌毒类的信息(5) 涉及不文明的信息。"
+      )
     }
-
   }
-
-
 }
 
 // 样式提示词
-const style = ref('')
+const style = ref("")
 
 // 选中的样式名称
-const selectedStyle = ref('')
+const selectedStyle = ref("")
 
 // 修改样式提示词函数
 const changeStyle = (newStyle) => {
@@ -166,11 +164,11 @@ const changeStyle = (newStyle) => {
 
 // 清除画布
 const clearCanvas = () => {
-  imageData.value = ''
+  imageData.value = ""
 }
 
 onMounted(() => {
-  console.log(imageStore.imgs);
+  console.log(imageStore.imgs)
 })
 </script>
 <template>
@@ -180,23 +178,31 @@ onMounted(() => {
       <div class="user_control">
         <!-- 提示词输入框 -->
         <div class="prompt">
-          <textarea name="" id="" ref="textareaRef" @input="inputChange" v-model="prompt"
-            placeholder="在这里输入你画作描述~"></textarea>
-          <el-popover placement="left" title="小贴士" :width="200" trigger="hover" content="尽可能仔细描述你画作，可以让画面更加丰富嗷~">
+          <textarea
+            name=""
+            id=""
+            ref="textareaRef"
+            @input="inputChange"
+            v-model="prompt"
+            placeholder="在这里输入你画作描述~"
+          ></textarea>
+          <el-popover
+            placement="left"
+            title="小贴士"
+            :width="200"
+            trigger="hover"
+            content="尽可能仔细描述你画作，可以让画面更加丰富嗷~"
+          >
             <template #reference>
-              <div class="tips">
-              </div>
+              <div class="tips"></div>
             </template>
           </el-popover>
-
         </div>
         <div class="call_word">
           <p>你还可以输入✨</p>
           <p>{{ textNumber }}/1000</p>
         </div>
-        <div class="generant" @click="startDraw()">
-          生成画作
-        </div>
+        <div class="generant" @click="startDraw()">生成画作</div>
         <!-- 参数面板 -->
         <div class="parameter_panel">
           <!-- 样式选择器 暂时隐藏-->
@@ -204,91 +210,140 @@ onMounted(() => {
             <h4>风格化</h4>
             <!-- 样式盒子大 -->
             <div class="style_box">
-
               <!-- 样式盒子 -->
-              <div class="box" @click="changeStyle('写实风格')" :class="{ selected: selectedStyle === '写实风格' }">
-                <img src="../assets/img/AIiPainting/xieshi.png" alt="">
+              <div
+                class="box"
+                @click="changeStyle('写实风格')"
+                :class="{ selected: selectedStyle === '写实风格' }"
+              >
+                <img src="../assets/img/AIiPainting/xieshi.png" alt="" />
                 <div class="title">写实</div>
               </div>
 
-              <div class="box" @click="changeStyle('油画风格')" :class="{ selected: selectedStyle === '油画风格' }">
-                <img src="../assets/img/AIiPainting/youhua.png" alt="">
+              <div
+                class="box"
+                @click="changeStyle('油画风格')"
+                :class="{ selected: selectedStyle === '油画风格' }"
+              >
+                <img src="../assets/img/AIiPainting/youhua.png" alt="" />
                 <div class="title">油画</div>
               </div>
-              <div class="box" @click="changeStyle('动漫风格')" :class="{ selected: selectedStyle === '动漫风格' }">
-                <img src="../assets/img/AIiPainting/dongman.png" alt="">
+              <div
+                class="box"
+                @click="changeStyle('动漫风格')"
+                :class="{ selected: selectedStyle === '动漫风格' }"
+              >
+                <img src="../assets/img/AIiPainting/dongman.png" alt="" />
                 <div class="title">动漫</div>
               </div>
 
-              <div class="box" @click="changeStyle('印象派')" :class="{ selected: selectedStyle === '印象派' }">
-                <img src="../assets/img/AIiPainting/yingxiangpai.png" alt="">
+              <div
+                class="box"
+                @click="changeStyle('印象派')"
+                :class="{ selected: selectedStyle === '印象派' }"
+              >
+                <img src="../assets/img/AIiPainting/yingxiangpai.png" alt="" />
                 <div class="title">印象派</div>
               </div>
 
-              <div class="box" @click="changeStyle('素描风格')" :class="{ selected: selectedStyle === '素描风格' }">
-                <img src="../assets/img/AIiPainting/sumiao.png" alt="">
+              <div
+                class="box"
+                @click="changeStyle('素描风格')"
+                :class="{ selected: selectedStyle === '素描风格' }"
+              >
+                <img src="../assets/img/AIiPainting/sumiao.png" alt="" />
                 <div class="title">素描</div>
               </div>
 
-              <div class="box" @click="changeStyle('水彩风格')" :class="{ selected: selectedStyle === '水彩风格' }">
-                <img src="../assets/img/AIiPainting/shuicai.png" alt="">
+              <div
+                class="box"
+                @click="changeStyle('水彩风格')"
+                :class="{ selected: selectedStyle === '水彩风格' }"
+              >
+                <img src="../assets/img/AIiPainting/shuicai.png" alt="" />
                 <div class="title">水彩</div>
               </div>
-              <div class="box" @click="changeStyle('照片风格')" :class="{ selected: selectedStyle === '照片风格' }">
-                <img src="../assets/img/AIiPainting/photo.png" alt="">
+              <div
+                class="box"
+                @click="changeStyle('照片风格')"
+                :class="{ selected: selectedStyle === '照片风格' }"
+              >
+                <img src="../assets/img/AIiPainting/photo.png" alt="" />
                 <div class="title">照片</div>
               </div>
 
-              <div class="box" @click="changeStyle('卡通风格')" :class="{ selected: selectedStyle === '卡通风格' }">
-                <img src="../assets/img/AIiPainting/katong.png" alt="">
+              <div
+                class="box"
+                @click="changeStyle('卡通风格')"
+                :class="{ selected: selectedStyle === '卡通风格' }"
+              >
+                <img src="../assets/img/AIiPainting/katong.png" alt="" />
                 <div class="title">卡通</div>
               </div>
             </div>
           </div>
           <div class="select_resolution">
             <div class="title">
-              <h4>
-                分辨率
-              </h4>
-              <p v-show="canvasHeight">宽度：{{ canvasWidth }} &nbsp;&nbsp;&nbsp; 高度：{{ canvasHeight }} </p>
-              <el-popover placement="left" title="分辨率" :width="200" trigger="hover"
-                content="分辨率实际上就是画布的大小、比列、数值越大，图片的质量就越大，但是等待的时间就越长">
+              <h4>分辨率</h4>
+              <p v-show="canvasHeight">
+                宽度：{{ canvasWidth }} &nbsp;&nbsp;&nbsp; 高度：{{
+                  canvasHeight
+                }}
+              </p>
+              <el-popover
+                placement="left"
+                title="分辨率"
+                :width="200"
+                trigger="hover"
+                content="分辨率实际上就是画布的大小、比列、数值越大，图片的质量就越大，但是等待的时间就越长"
+              >
                 <template #reference>
-                  <div class="tips">
-                  </div>
+                  <div class="tips"></div>
                 </template>
               </el-popover>
             </div>
-            <el-dropdown placement="bottom" style="width: 100%;">
-              <el-button style="width: 100%;">选择分辨率</el-button>
+            <el-dropdown placement="bottom" style="width: 100%">
+              <el-button style="width: 100%">选择分辨率</el-button>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item v-for="res in resolutions" :key="res"
-                    @click="updateCanvasSize(res.split('x')[0], res.split('x')[1])">
+                  <el-dropdown-item
+                    v-for="res in resolutions"
+                    :key="res"
+                    @click="
+                      updateCanvasSize(res.split('x')[0], res.split('x')[1])
+                    "
+                  >
                     {{ res }}
                   </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
-
           </div>
           <div class="select_resolution">
             <div class="title">
-              <h4>
-                采样率
-              </h4>
-              <el-popover placement="left" title="采样率" :width="200" trigger="hover" content="采样率越大，作画的风格就越贴合你的提示词">
+              <h4>采样率</h4>
+              <el-popover
+                placement="left"
+                title="采样率"
+                :width="200"
+                trigger="hover"
+                content="采样率越大，作画的风格就越贴合你的提示词"
+              >
                 <template #reference>
-                  <div class="tips">
-                  </div>
+                  <div class="tips"></div>
                 </template>
               </el-popover>
             </div>
-            <div class="slider-demo-block" style="padding: 10px;">
+            <div class="slider-demo-block" style="padding: 10px">
               <span class="demonstration"></span>
               <!-- 绑定 v-model 到 samplingRate -->
               <!-- 设置 min 为 0.0，max 为 1，step 为 0.1 -->
-              <el-slider v-model="samplingRate" :min="0.1" :max="1" :step="0.1"></el-slider>
+              <el-slider
+                v-model="samplingRate"
+                :min="0.1"
+                :max="1"
+                :step="0.1"
+              ></el-slider>
             </div>
           </div>
         </div>
@@ -298,8 +353,13 @@ onMounted(() => {
         <!-- 画布 -->
         <div class="canvas">
           <div class="img-box" v-if="!isLoading">
-            <el-image style="width: 100%; " :src="imageData" fit="cover" v-if="imageData" :preview-src-list="imageStore.imgs
-              "></el-image>
+            <el-image
+              style="width: 100%"
+              :src="imageData"
+              fit="cover"
+              v-if="imageData"
+              :preview-src-list="imageStore.imgs"
+            ></el-image>
             <el-empty description="还没有开始绘画" v-else />
           </div>
           <div class="loading-box" v-else="isLoading">
@@ -312,29 +372,34 @@ onMounted(() => {
         <div class="controller">
           <!-- 清除画布 -->
           <div class="item" @click="clearCanvas()">
-            <img src="../assets/img/cross-circle.svg" alt="">
+            <img src="../assets/img/cross-circle.svg" alt="" />
           </div>
           <!-- 下载图片 -->
-          <div class="item" @click=saveImage(imageData)>
-            <img src="../assets/img/arrow-down-to-dotted-line.svg" alt="">
+          <div class="item" @click="saveImage(imageData)">
+            <img src="../assets/img/arrow-down-to-dotted-line.svg" alt="" />
           </div>
           <!-- 清除所有图片历史 -->
           <div class="item" @click="imageStore.clear()">
-            <img src="../assets/img/trash-undo.svg" alt="">
+            <img src="../assets/img/trash-undo.svg" alt="" />
           </div>
-
         </div>
         <!-- 画历史 -->
         <div class="image-history-box">
           <div class="title">
-            <h4>
-              历史记录
-            </h4>
+            <h4>历史记录</h4>
           </div>
           <div class="history-list" v-if="imageStore.imgs.length > 0">
-            <div class="history-item" v-for="(item, index) in imageStore.imgs" :key="index">
-              <el-image style="width: 100px;height: 100px; border-radius: 10px; " :src="item"
-                :preview-src-list="imageStore.imgs" :initial-index="index">
+            <div
+              class="history-item"
+              v-for="(item, index) in imageStore.imgs"
+              :key="index"
+            >
+              <el-image
+                style="width: 100px; height: 100px; border-radius: 10px"
+                :src="item"
+                :preview-src-list="imageStore.imgs"
+                :initial-index="index"
+              >
               </el-image>
             </div>
           </div>
@@ -342,7 +407,7 @@ onMounted(() => {
           <div class="empty-history" v-else>
             <div class="content">
               <div class="img-box">
-                <img src="../assets/img/time-past.svg" alt="">
+                <img src="../assets/img/time-past.svg" alt="" />
               </div>
               <p>暂无历史记录</p>
             </div>
@@ -364,7 +429,7 @@ onMounted(() => {
 
 h4 {
   margin-bottom: 5px;
-  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-family: "Helvetica Neue", Arial, sans-serif;
 }
 
 /* 通用过渡效果 */
@@ -426,7 +491,7 @@ h4 {
         outline: none;
         padding: 5px;
         font-size: 15px;
-        font-family: 'Helvetica Neue', Arial, sans-serif;
+        font-family: "Helvetica Neue", Arial, sans-serif;
         color: @text-color;
       }
 
@@ -437,7 +502,7 @@ h4 {
         bottom: 10px;
         right: 10px;
         font-size: 12px;
-        font-family: 'Helvetica Neue', Arial, sans-serif;
+        font-family: "Helvetica Neue", Arial, sans-serif;
         background: url(../assets/img/interrogation.svg) center center;
         background-size: cover;
         color: @text-color-muted;
@@ -448,7 +513,7 @@ h4 {
       height: 30px;
       display: flex;
       font-size: 13px;
-      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-family: "Helvetica Neue", Arial, sans-serif;
       justify-content: space-between;
       color: @text-color-muted;
     }
@@ -460,9 +525,8 @@ h4 {
       color: white;
       line-height: 50px;
       cursor: pointer;
-      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-family: "Helvetica Neue", Arial, sans-serif;
       font-weight: bold;
-
     }
 
     .parameter_panel {
@@ -479,7 +543,6 @@ h4 {
         @media (prefers-color-scheme: dark) {
           background-color: #121212;
           color: white;
-
         }
       }
 
@@ -500,8 +563,6 @@ h4 {
             cursor: pointer;
             transition: all 0.3s ease;
 
-
-
             img {
               width: 100%;
               height: 100%;
@@ -518,12 +579,9 @@ h4 {
               @media (prefers-color-scheme: dark) {
                 background-color: #121212;
                 color: white;
-
               }
 
-              font-family: 'Helvetica Neue',
-              Arial,
-              sans-serif;
+              font-family: "Helvetica Neue", Arial, sans-serif;
             }
           }
 
@@ -537,7 +595,7 @@ h4 {
 
           /* 如果想要更显著的效果，还可以在边框之外添加一些动画效果 */
           .selected::after {
-            content: '';
+            content: "";
             position: absolute;
             width: 20px;
             height: 20px;
@@ -551,14 +609,13 @@ h4 {
           }
 
           @keyframes pulse {
-
             0%,
             100% {
-              background-color: white
+              background-color: white;
             }
 
             50% {
-              background-color: rgb(2, 91, 255)
+              background-color: rgb(2, 91, 255);
             }
           }
         }
@@ -571,17 +628,17 @@ h4 {
           display: flex;
           justify-content: space-between;
           color: @text-color;
-          font-family: 'Helvetica Neue', Arial, sans-serif;
+          font-family: "Helvetica Neue", Arial, sans-serif;
 
           @media (prefers-color-scheme: dark) {
-
             filter: invert(100%);
           }
 
           .tips {
             width: 20px;
             height: 20px;
-            background: url(../assets/img/interrogation.svg) center center no-repeat;
+            background: url(../assets/img/interrogation.svg) center center
+              no-repeat;
             background-size: cover;
           }
         }
@@ -628,16 +685,18 @@ h4 {
         .loading-content {
           font-size: 16px;
           font-weight: 800;
-          background-image: linear-gradient(45deg,
-              #ee7752,
-              #e73c7e,
-              #23a6d5,
-              #23d5ab,
-              #23a6d5,
-              #e73c7e,
-              #ee7752,
-              #e73c7e,
-              #23a6d5);
+          background-image: linear-gradient(
+            45deg,
+            #ee7752,
+            #e73c7e,
+            #23a6d5,
+            #23d5ab,
+            #23a6d5,
+            #e73c7e,
+            #ee7752,
+            #e73c7e,
+            #23a6d5
+          );
           background-size: 400%;
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
@@ -693,21 +752,13 @@ h4 {
         @media (prefers-color-scheme: dark) {
           background-color: #6b6b6b;
           color: white;
-
         }
-
 
         img {
           width: 100%;
           padding: 10px;
         }
-
-
       }
-
-
-
-
     }
 
     .image-history-box {
@@ -814,7 +865,7 @@ h4 {
       color: white;
       line-height: 50px;
       cursor: pointer;
-      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-family: "Helvetica Neue", Arial, sans-serif;
       font-weight: bold;
       transition: background-color 0.3s ease, transform 0.3s ease;
       /* 添加过渡效果 */
@@ -835,7 +886,6 @@ h4 {
     }
 
     .parameter_panel {
-
       .select_style_box,
       .select_resolution {
         background-color: @bg-color-dark;
@@ -860,7 +910,6 @@ h4 {
   }
 
   .ai_output {
-
     .canvas,
     .controller,
     .image-history-box,

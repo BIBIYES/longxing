@@ -8,6 +8,7 @@ import AIPainting from '@/views/AIPaintingView.vue'
 import testView from '@/views/testView.vue'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  BASE_URL:'/',
   routes: [
     {
       path: '/',

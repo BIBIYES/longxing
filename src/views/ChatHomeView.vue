@@ -118,7 +118,7 @@ const fontAnimation = () => {
   typed = new Typed(typewriterElement.value, {
     strings: [
       'Hi，我是龙梦GPT',
-      '运行在龙芯平台的多元化GPT',
+      '一个基于知识库问答的多元化AI应用',
       '今天有什么可以帮到您？'
     ],
     // 打字速度
