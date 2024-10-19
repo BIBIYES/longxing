@@ -75,8 +75,11 @@ const handleSendQuestion = () => {
 
       }
     }
+
   };
   sendQuestion(params);
+  toggleStatusLamp(true)
+  resetInputData()
 };
 const showStatusLamp = ref(false);  // 初始值为显示状态灯
 // 切换状态灯的方法
@@ -104,8 +107,7 @@ const sendMessage = () => {
         content: "",
         content_type: "text"
       })
-      // 知识库搜索
-      toggleStatusLamp(true)
+      // 调用请求接口
       handleSendQuestion()
     } else {
       console.warn('你没有提问或选择图片。')
@@ -161,6 +163,7 @@ const sendImgMessage = () => {
       content: question.value,
       content_type: 'text'
     })
+
     textImageUtil.sendMessage(question.value, imgBase64.value)
     question.value = ''
     imgBase64.value = ''
@@ -309,6 +312,7 @@ const parseUrl = () => {
 // 生命周期钩子
 onMounted(async () => {
   // 获取历史聊天记录
+  parseUrl()
   getHistoricalMessages()
   parseUrl()
   nextTick(() => {
@@ -331,8 +335,8 @@ const scrollToBottom = () => {
 }
 
 
-const sendWarning = ()=>{
-  warning("警告","fastgpt版本在目前版本下不支持上传文件")
+const sendWarning = () => {
+  warning("警告", "fastgpt版本在目前版本下不支持上传文件")
 }
 </script>
 
@@ -361,7 +365,7 @@ const sendWarning = ()=>{
           <el-image style="width: 100px; height: 100%" :src="`data:image/png;base64,${imgBase64}`" />
         </div>
         <div class="input-controls">
-          <input type="file" @change="handleFileChange" accept="image/*" style="display: none" ref="fileInputRef"/>
+          <input type="file" @change="handleFileChange" accept="image/*" style="display: none" ref="fileInputRef" />
           <div class="icon icon-upload" @click="sendWarning">
             <!-- <img src="../assets/img/上传.png" alt="Upload Icon" /> -->
             <el-icon :size="28">
