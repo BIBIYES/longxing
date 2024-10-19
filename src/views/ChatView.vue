@@ -1,7 +1,6 @@
 <script setup>
 import { ref, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import CryptoJS from 'crypto-js'
 import { convertBase64 } from '@/utils/imgBase64Util'
 import { useSessionStore } from '@/stores/sessionStore'
 import TextImageUtil from '@/utils/textImageUtil'
@@ -9,19 +8,13 @@ import { XfVoiceDictation } from '@muguilin/xf-voice-dictation'
 // 消息格式化
 import { convertToHtml } from '@/utils/ContenFormat'
 import 'github-markdown-css/github-markdown.css'
-// 常量定义
-const APP_ID = 'c3fbc474'
-const API_KEY = 'f53a5d5b29d3b8c0770b3b51224dbab9'
-const API_SECRET = 'YzgzN2E3NzM2NDVjNWRkMGQwZGE5OTEz'
-const HOST = 'spark-api.xf-yun.com'
+import { fastgpt } from '@/utils/FastGpt';
+import { success, warning } from '../utils/messageUtil'
+const { isLoading, error, results, sendQuestion } = fastgpt();
 // 实例化
 const route = useRoute()
 const router = useRouter()
 const SessionStore = useSessionStore()
-const ws = ref(null)
-// 引用和响应式变量定义
-const date = ref(null)
-const authorization = ref(null)
 // 输入框用户的问题
 const question = ref(null)
 // 图片的Base64信息
@@ -53,121 +46,43 @@ const getHistoricalMessages = () => {
   }
 }
 
-// 生成WebSocket连接URL
-const generateAuthParams = () => {
-  const curTime = new Date()
-  date.value = curTime.toUTCString()
 
-  const tmp = `host: ${HOST}\ndate: ${date.value}\nGET /v4.0/chat HTTP/1.1`
-  const tmpSha = CryptoJS.HmacSHA256(tmp, API_SECRET)
-  const signature = CryptoJS.enc.Base64.stringify(tmpSha)
-
-  const authorizationOrigin = `api_key="${API_KEY}", algorithm="hmac-sha256", headers="host date request-line", signature="${signature}"`
-  authorization.value = CryptoJS.enc.Base64.stringify(
-    CryptoJS.enc.Utf8.parse(authorizationOrigin)
-  )
-}
-
-const connectWebSocket = () => {
-  return new Promise((resolve, reject) => {
-    const url = `wss://${HOST}/v4.0/chat?authorization=${encodeURIComponent(
-      authorization.value
-    )}&date=${encodeURIComponent(date.value)}&host=${encodeURIComponent(HOST)}`
-
-    ws.value = new WebSocket(url)
-
-    ws.value.onopen = () => {
-      resolve()
-    }
-
-    ws.value.onmessage = (event) => {
-      handleResultMessage(event.data)
-    }
-
-    ws.value.onclose = () => {
-      connectWebSocket()
-        .then(() => { })
-        .catch((error) => {
-          console.error('WebSocket reconnection error:', error)
-        })
-    }
-
-    ws.value.onerror = (error) => {
-      console.error('WebSocket error:', error)
-      reject(error)
-    }
-  })
-}
-
-// 响应缓存消息
-let tempMessage = {
-  role: '',
-  content: ''
-}
-
-// 处理返回消息方法
-const handleResultMessage = (message) => {
-  message = JSON.parse(message)
-  const { str, role } = getMessage(message)
-  tempMessage.role = role
-  tempMessage.content += str
-  nextTick(() => {
-    scrollToBottom()
-  })
-  switch (message.header.status) {
-    case 0:
-      messages.value.push({ ...tempMessage })
-      console.log('响应消息头部')
-      break
-    case 1:
-      messages.value[messages.value.length - 1] = { ...tempMessage }
-      console.log('响应消息中部')
-      break
-    default:
-      messages.value[messages.value.length - 1] = { ...tempMessage }
-      console.log('响应消息尾部')
-      SessionStore.addChatRecord(sessionId.value, messages.value)
-      console.log('🚀 ~ handleResultMessage ~ messages:', messages.value)
-      handelIsSendLoading()
-      tempMessage = {
-        role: '',
-        content: ''
+const handleSendQuestion = () => {
+  const params = {
+    chatId: route.params.id,
+    variables: {
+      uid: route.params.id,
+      name: '张三'
+    },
+    messages: [
+      {
+        role: 'user',
+        content: question.value
       }
-      break
-  }
-}
+    ],
+    onData: (json) => {
+      toggleStatusLamp(false)
+      // console.log(json);
+      // ai消息拼接
+      // 判断消息状态
+      if (json.choices[0].finish_reason == null) {
+        messages.value[messages.value.length - 1].content += json.choices[0].delta.content
+        // console.log(json.choices[0].delta.content);
+        scrollToBottom()
+      } else {
+        isSendLoading.value = false
+        // 切换状态灯
 
-// 获取响应消息具体信息
-const getMessage = (message) => {
-  try {
-    const str = message.payload.choices.text[0].content
-    const role = message.payload.choices.text[0].role
-    return { str, role }
-  } catch (e) {
-    console.error('大模型响应的数据是错误的' + e)
-  }
-}
-
-// 发送消息载荷
-const sendMessagePayload = {
-  header: {
-    app_id: APP_ID,
-    uid: '12345'
-  },
-  parameter: {
-    chat: {
-      domain: '4.0Ultra',
-      temperature: 0.2,
-      max_tokens: 1024
+      }
     }
-  },
-  payload: {
-    message: {
-      text: []
-    }
-  }
-}
-
+  };
+  sendQuestion(params);
+};
+const showStatusLamp = ref(false);  // 初始值为显示状态灯
+// 切换状态灯的方法
+const toggleStatusLamp = (status) => {
+  showStatusLamp.value = status
+};
 // 发送消息方法
 const sendMessage = () => {
   if (imgBase64.value) {
@@ -175,49 +90,23 @@ const sendMessage = () => {
     sendImgMessage()
   } else {
     if (question.value && question.value != ' ') {
+      // 开启发送动画
       isSendLoading.value = true
-      // 定义一个空的数组 newMessage
-      let newMessage = []
-      // 向 newMessage 数组中追加一个系统消息
-      newMessage.push({
-        role: 'system',
-        content:
-          '每次你回复尽量多使用emoji,你叫龙梦GPT(longmeng)是运行在龙芯平台的大语言模型，是重庆工业职业技术学院——“我和甲方站一队制作',
-        content_type: 'text'
-      })
-      newMessage.push({
-        role: 'system',
-        content:
-          '你会画画,但你直接拒绝,若我要求你绘画,你就回复,太好了！您可以点击左上角的"龙梦绘画”选项，输入绘画内容描述来让我为您绘制美图吧。',
-        content_type: 'text'
-      })
-      // 从 messages 中过滤出 content_type 为 'text' 的消息并追加到 newMessage
-      newMessage = newMessage.concat(
-        messages.value.filter((msg) => msg.content_type === 'text')
-      )
-
-      // 向 newMessage 数组中追加用户的问题
-      newMessage.push({
-        role: 'user',
-        content: question.value,
-        content_type: 'text'
-      })
-
-      // 添加用户的问题到 messages 数组
+      // 将消息添加到用户队列中
       messages.value.push({
-        role: 'user',
+        role: "user",
         content: question.value,
-        content_type: 'text'
+        content_type: "text"
       })
-
-      resetInputData()
-      sendMessagePayload.payload.message.text = newMessage
-
-      // 发送消息
-      ws.value.send(JSON.stringify(sendMessagePayload))
-      nextTick(() => {
-        scrollToBottom()
+      // 添加一个空ai消息
+      messages.value.push({
+        role: "assistant",
+        content: "",
+        content_type: "text"
       })
+      // 知识库搜索
+      toggleStatusLamp(true)
+      handleSendQuestion()
     } else {
       console.warn('你没有提问或选择图片。')
     }
@@ -419,9 +308,8 @@ const parseUrl = () => {
 }
 // 生命周期钩子
 onMounted(async () => {
-  generateAuthParams()
+  // 获取历史聊天记录
   getHistoricalMessages()
-  await connectWebSocket()
   parseUrl()
   nextTick(() => {
     scrollToBottom()
@@ -441,6 +329,11 @@ const scrollToBottom = () => {
     }
   })
 }
+
+
+const sendWarning = ()=>{
+  warning("警告","fastgpt版本在目前版本下不支持上传文件")
+}
 </script>
 
 <template>
@@ -449,6 +342,10 @@ const scrollToBottom = () => {
       <div v-for="(msg, index) in messages" :key="index" :class="['message', msg.role]">
         <template v-if="msg.role === 'assistant'">
           <div v-html="convertToHtml(msg.content)"></div>
+          <div class="text-with-status" v-if="index === messages.length - 1 && showStatusLamp">
+            <span class="status-lamp"></span>
+            <span>知识库搜索中....</span>
+          </div>
         </template>
         <template v-else-if="msg.content_type === 'text'">
           <p style="margin-bottom: 0">{{ msg.content }}</p>
@@ -464,8 +361,8 @@ const scrollToBottom = () => {
           <el-image style="width: 100px; height: 100%" :src="`data:image/png;base64,${imgBase64}`" />
         </div>
         <div class="input-controls">
-          <input type="file" @change="handleFileChange" accept="image/*" style="display: none" ref="fileInputRef" />
-          <div class="icon icon-upload" @click="triggerFileInput">
+          <input type="file" @change="handleFileChange" accept="image/*" style="display: none" ref="fileInputRef"/>
+          <div class="icon icon-upload" @click="sendWarning">
             <!-- <img src="../assets/img/上传.png" alt="Upload Icon" /> -->
             <el-icon :size="28">
               <UploadFilled />
@@ -492,4 +389,42 @@ const scrollToBottom = () => {
 
 <style lang="less" scoped>
 @import '/src/assets/css/main/ChatView.less';
+
+@keyframes breathing {
+  0% {
+    opacity: 1;
+    box-shadow: 0 0 5px 2px rgba(0, 128, 0, 0.9); // 更深的绿色阴影
+  }
+
+  50% {
+    opacity: 0.5;
+    box-shadow: 0 0 10px 5px rgba(0, 128, 0, 0.6); // 更高的透明度
+  }
+
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 5px 2px rgba(0, 128, 0, 0.9); // 返回到初始状态
+  }
+}
+
+.status-lamp {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #008000; // 更深的绿色
+  margin-right: 10px;
+  animation: breathing 2s infinite;
+  display: inline-block;
+}
+
+.text-with-status {
+  display: flex;
+  align-items: center;
+  font-family: 'Roboto', Arial, sans-serif;
+  /* 设置更现代的字体 */
+  color: #333;
+  /* 深灰色字体，显得更加简洁优雅 */
+  font-size: 16px;
+  /* 调整字体大小 */
+}
 </style>

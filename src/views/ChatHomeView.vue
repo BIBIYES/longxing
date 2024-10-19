@@ -17,6 +17,7 @@ const sessionStore = useSessionStore()
 const isVoiceLoading = ref(false)
 const isRecording = ref(false)
 let placeholderText = ref('给"龙梦说些什么"(shift+enter换行)')
+import { warning } from '@/utils/messageUtil'
 
 // 发送消息的函数
 const sendMessage = () => {
@@ -68,13 +69,13 @@ let times = null
 
 // 实例化迅飞语音听写（流式版）WebAPI
 const originalConsoleLog = console.log
-console.log = function () {}
+console.log = function () { }
 const xfVoice = new XfVoiceDictation({
   APPID: 'c3fbc474',
   APISecret: 'YzgzN2E3NzM2NDVjNWRkMGQwZGE5OTEz',
   APIKey: 'f53a5d5b29d3b8c0770b3b51224dbab9',
 
-  onWillStatusChange: function (oldStatus, newStatus) {},
+  onWillStatusChange: function (oldStatus, newStatus) { },
 
   onTextChange: function (text) {
     question.value = text
@@ -85,7 +86,7 @@ const xfVoice = new XfVoiceDictation({
     }
   },
 
-  onError: function (error) {}
+  onError: function (error) { }
 })
 console.log = originalConsoleLog
 // 录音控制
@@ -150,6 +151,11 @@ const handleFileChange = (event) => {
       console.error('文件读取错误:', error)
     })
 }
+
+
+const sendWarning = () => {
+  warning("警告", "fastgpt版本在目前版本下不支持上传文件")
+}
 </script>
 
 <template>
@@ -198,7 +204,7 @@ const handleFileChange = (event) => {
         </div>
         <div class="input-controls">
           <input type="file" @change="handleFileChange" accept="image/*" style="display: none" ref="fileInputRef" />
-          <div class="icon icon-upload" @click="triggerFileInput">
+          <div class="icon icon-upload" @click="sendWarning">
             <!-- <img src="../assets/img/上传.png" alt="Upload Icon" /> -->
             <el-icon :size="28">
               <UploadFilled />
